@@ -2,48 +2,45 @@ const db = require('../Models')
 const Op = db.Sequelize.Op
 exports.registMember=(async(req,res)=>{
     let {Pers_no} = req.body
-    let [newMember,created] = await db.MemberList.findOrCreate({where:{Pers_no:Pers_no},defaults:{...req.body}})
-   if(created) return res.status(200).send({msg:"สมัครเรียบร้อยแล้ว กรุณารอการอนุมัติ"})
-     return res.status(202).send({msg:"รหัสบัตรประชาชนถูกใช้งานแล้ว กรุณารอการอนุมัติ"})
+    let employee = await db.Employee.findOne({where:{Pers_no:Pers_no}})
+    if (employee===null ) {
+        let [newMember,created] = await db.MemberList.findOrCreate({where:{Pers_no:Pers_no},defaults:{...req.body}})
+            //ไม่มีสมาชิกในระบบ และ เมมเบอร์ลิส จึงสมัครได้
+        if(created) return res.status(200).send({msg:"สมัครเรียบร้อยแล้ว กรุณารอการอนุมัติ"})
+    }
+     return res.status(202).send({msg:"รหัสบัตรประชาชนถูกใช้งานแล้ว "})
 })
 
-exports.memberList=(async(req,res)=>{
-    console.log(req.user.DistrictDistrictNo);
-    const emp_list = await db.MemberList.findAll({where:{[Op.and]:
-        [
-            {DistrictDistrictNo:req.user.DistrictDistrictNo},
-            {role_name:"employee"}
-        ]
-    }})
-    console.log(emp_list);
-     res.status(200).send(emp_list)
+exports.employee_list=(async(req,res)=>{
+    if (req.user.role === "leader"  ){
+            const emp_list = await db.MemberList.findAll({where:{[Op.and]:
+                [
+                    {distict_member_id:req.user.distict_id},
+                    {role_name:"employee"}
+                ]
+            }})
+           return res.status(200).send(emp_list)
+    }
+    return res.status(403).send()
+    
 })
 
 exports.leaderList =(async(req,res)=>{
-    if (req.user.DistrictDistrictNo !== 0) {
-        res.status(400).send({msg:"Not Your Role "})
+    if (req.user.role === 'admin'){
+        const leader = await db.MemberList.findAll({where:{role_name:"leader"}})
+          return  res.status(200).send(leader)
     }
-    const leader = await db.MemberList.findAll({where:{[Op.and]:[
-        {role_name:"leader"}
-    ]}})
-    res.status(201).send(leader)
+    return res.status(403).send()
+   
 })
 
 
 exports.deleteMember =(async(req,res)=>{
     const targetId = req.params.id
-    await db.MemberList.destroy({where:{id:targetId}})
- 
-    res.status(204).send({msg:`delete member id ${targetId} success`})
+    if (req.user.role === 'admin' ||req.user.role === "leader"){
+         await db.MemberList.destroy({where:{id:targetId}})
+        return res.status(204).send({msg:`delete member id ${targetId} success`})
+    }
+   return res.status(403).send()
 })
 
-exports.getDistrictById = (async(req,res,next,D_Id)=>{
-    //get District and Memberlist role general
-        const Id_District = await db.MemberList.findAll({where:{[Op.and]:
-            [
-                {DistrictDistrictNo:D_Id},
-                {role_name:"employee"}
-            ]}})
-        req.MemberInDistrict = Id_District
-        next()
-})
