@@ -19,12 +19,7 @@ module.exports=(sequelize,DataTypes)=>{
         Place:{
             type:DataTypes.DOUBLE
         },
-        // Detail_Useful:{
-        //     type:DataTypes.STRING(255)
-        // },
-        // Special_Useful:{
-        //     type:DataTypes.STRING(255)
-        // } ,
+        
         Mark:{
             type:DataTypes.STRING(255)
         },

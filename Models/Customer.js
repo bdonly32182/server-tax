@@ -1,8 +1,11 @@
 module.exports=(sequelize,DataTypes)=>{
     const model = sequelize.define("Customer",{
+        id_customer:{
+            type:DataTypes.STRING(34),
+            primaryKey:true,
+        },
         Cus_No:{
             type:DataTypes.STRING(13),
-            primaryKey:true
 
         },
         title:{
@@ -44,10 +47,7 @@ module.exports=(sequelize,DataTypes)=>{
         Phone_no:{
             type:DataTypes.STRING(255)
         },
-        Line_no:{
-            type:DataTypes.INTEGER,
-            defaultValue:1
-        },
+       
         Land_years:{
             type:DataTypes.DOUBLE,
             defaultValue:0
@@ -55,13 +55,14 @@ module.exports=(sequelize,DataTypes)=>{
         Build_years:{
             type:DataTypes.DOUBLE,
             defaultValue:0
-        }
+        },
+        
+        
     },{
         tableName:"customer"
     });
     model.associate = models =>{
-        // model.hasOne(models.Address,{foreignKey:"Cus_No"});
-        // model.belongsToMany(models.Land,{through:});
+        model.belongsTo(models.District,{foreignKey:'isDistrict_id'});
         model.hasMany(models.OwnerLand,{foreignKey:"Customer_own_id"})
         model.belongsToMany(models.Building,{through:models.OwnerBuilding,foreignKey:"Cus_No"});
         model.belongsToMany(models.Room,{through:models.OwnerRoom,foreignKey:"Cus_No"})

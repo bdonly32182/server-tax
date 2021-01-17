@@ -9,6 +9,5 @@ module.exports=app=>{
         .put(auth,cus.editCus)
         .delete(auth,cus.deleteCus)
     app.get('/api/search/:name',auth,cus.SearchName)
-    app.param('c_id',cus.cusById)
     app.post('/api/address',auth,cus.address_send)
 }

@@ -16,9 +16,13 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasMany(models.Employee,{foreignKey:"distict_id"})
         model.hasMany(models.Land,{foreignKey:"distict_id"})
         // model.hasMany(models.Tambol,{ForeignKey:"distict_id"})
+        model.hasMany(models.Customer,{foreignKey:'isDistrict_id'});
+
         model.hasMany(models.MemberList,{foreignKey:"distict_member_id"})
         model.hasMany(models.Condo,{foreigkey:"district_id"})
-        model.belongsToMany(models.Tax_Group,{through:models.District_has_Tax,foreignKey:"District_ID"})
+        model.hasMany(models.Tax_Group,{foreignKey:"Tax_in_district"})
+        model.hasMany(models.Building,{foreignKey:'Build_in_district'})
+
     }
     return model
 }

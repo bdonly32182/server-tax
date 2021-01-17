@@ -78,14 +78,11 @@ module.exports=(sequelize,DataTypes)=>{
         tableName:"land"
     });
     model.associate = models =>{
-        model.belongsTo(models.District,{ForeignKey:"distict_id"})
-        model.hasMany(models.UsefulLand,{ForeignKey:"Land_id"})
-        // model.belongsToMany(models.Building,{through:models.BuidOnLand})
-        // model.belongsToMany(models.Customer,{through:})
+        model.belongsTo(models.District,{foreignKey:"distict_id"})
+        model.hasMany(models.UsefulLand,{foreignKey:"Land_id"})
+    
         model.hasMany(models.OwnerLand,{foreignKey:"Land_own_id"})
-        // model.hasMany(models.OwnerLand)
         model.belongsTo(models.Tax_Group,{foreignKey:"Land_Tax_ID"})
-        // model.hasMany(models.NextTo)
         model.belongsTo(models.RateLand,{foreignKey:"rate_land_id"})
     }
     return model

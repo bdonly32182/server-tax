@@ -17,7 +17,7 @@ module.exports=(sequelize,DataTypes) => {
     },{tableName:"room"})
     model.associate = models =>{
         model.hasMany(models.Useful_room,{foreigkey:"room_id"})
-        model.belongsToMany(models.Customer,{through:models.OwnerRoom,forignKey:"Condo_no"})
+        model.belongsToMany(models.Customer,{through:models.OwnerRoom,foreignKey:"Condo_no"})
         model.belongsTo(models.Condo,{foreignKey:"Condo_no"})
         model.belongsTo(models.Tax_Group,{foreignKey:"Room_Tax_ID"})
     }

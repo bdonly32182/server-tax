@@ -15,7 +15,7 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(100)
         },
         pictur:{
-            type:DataTypes.BLOB(),
+            type:DataTypes.STRING(255),
             defaultValue:"no picture"
         }
     },{

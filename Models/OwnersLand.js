@@ -1,9 +1,6 @@
 module.exports=(sequelize,DataTypes)=>{
     const model = sequelize.define("OwnerLand",{
-        Tax_ID:{
-            type:DataTypes.STRING(255)
-
-        },
+        
         Line_No:{
             type:DataTypes.INTEGER
         },
