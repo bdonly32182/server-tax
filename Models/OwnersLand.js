@@ -1,6 +1,6 @@
 module.exports=(sequelize,DataTypes)=>{
     const model = sequelize.define("OwnerLand",{
-        
+        //จะเก็บไอดีเเลน และ ประชาชน ที่นำเข้าจาก เอ็กเซล
         Line_No:{
             type:DataTypes.INTEGER
         },

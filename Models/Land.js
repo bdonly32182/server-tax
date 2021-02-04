@@ -36,16 +36,16 @@ module.exports=(sequelize,DataTypes)=>{
         }
         ,
         RAI:{
-            type:DataTypes.DOUBLE
-
+            type:DataTypes.DOUBLE,
+            defaultValue:0
         },
         GNAN:{
-            type:DataTypes.DOUBLE
-
+            type:DataTypes.DOUBLE,
+            defaultValue:0
         },
         WA:{
-            type:DataTypes.DOUBLE
-
+            type:DataTypes.DOUBLE,
+            defaultValue:0
         },
         Mark:{
             type:DataTypes.STRING(255)
@@ -53,12 +53,13 @@ module.exports=(sequelize,DataTypes)=>{
         totalPlace:{
             type:DataTypes.DOUBLE,
             set(value){
-                this.setDataValue('totalPlace',(this.RAI * 400) +(this.GNAN *100) + this.WA)
+                this.setDataValue('totalPlace',(this.RAI * 400) +(this.GNAN *100) + (this.WA*1))
             }
         }
         ,
         Price:{
-            type:DataTypes.DOUBLE
+            type:DataTypes.DOUBLE,
+            defaultValue:0
         },
         Rate_Price_land:{
             type:DataTypes.DOUBLE,
@@ -66,21 +67,13 @@ module.exports=(sequelize,DataTypes)=>{
                 this.setDataValue('Rate_Price_land',this.Price * this.totalPlace)
             }
         }
-        ,
-        Price_tanaruk:{
-            type:DataTypes.DOUBLE,
-            defaulValue:0
-        },
-        Payment_Cus:{
-            type:DataTypes.STRING(13)
-        }  
+       
     },{
         tableName:"land"
     });
     model.associate = models =>{
         model.belongsTo(models.District,{foreignKey:"distict_id"})
-        model.hasMany(models.UsefulLand,{foreignKey:"Land_id"})
-    
+        model.hasMany(models.UsefulLand,{foreignKey:"Land_id",onDelete:'CASCADE'})
         model.hasMany(models.OwnerLand,{foreignKey:"Land_own_id"})
         model.belongsTo(models.Tax_Group,{foreignKey:"Land_Tax_ID"})
         model.belongsTo(models.RateLand,{foreignKey:"rate_land_id"})

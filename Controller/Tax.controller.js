@@ -1,48 +1,35 @@
 const db = require("../Models")
 const Op = db.Sequelize.Op
 const sequelize = db.sequelize
+const {QueryTypes} = require('sequelize') 
 const generate_tax = async(req,res) => {
-    const {Tax_ID,land_id,payment} = req.body
-    console.log(req.body.customer);
-    console.log(Tax_ID);
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-      const customer = await db.Customer.findOne({where:{Cus_No : payment}})
-      console.log(customer);
-        const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{Tax_ID:Tax_ID},where:{Tax_ID:Tax_ID}})
-          await db.Land.update({Tax_ID:tax.Tax_ID},{where:{code_land:land_id}})
-          await db.Address.findOrCreate({where:{Tax_ID:tax.Tax_ID},defaults:{
-            Num_House:customer.Num_House,Moo:customer.Moo,Road_Name:customer.Road_Name,Soi:customer.Soi,Tambol:customer.Tambol
-            ,district_name:customer.district_name,Changwat:customer.Changwat,Post_No:customer.Post_No,Phone_no:customer.Phone_no
-            ,Tax_ID:tax.Tax_ID}})
+    const {uid_tax,land_id,customer_has_tax,customer,Category_Tax} = req.body
+    if (req.user.role === "leader" || req.user.role=== "employee"){
+        const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
+          await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}});
+          await db.Land.update({Land_Tax_ID:tax.uid_tax},{where:{code_land:land_id}});
+
+         Category_Tax !=="รัฐบาล"&&await db.UsefulLand.update({UsefulLand_Tax_ID:tax.uid_tax},{where:{Land_id:land_id}});
+        // create true === uid_tax นี้ยังไม่มีในระบบ
         if(created) { 
-          await db.Customer_has_tax.bulkCreate(req.body.customer)
-          await db.District_has_Tax.create({District_ID:req.user.DistrictDistrictNo,Tax_ID:tax.Tax_ID})
-         
+          await db.Customer_has_tax.bulkCreate(customer_has_tax)
+          await db.Address.create({...customer,Address_Tax_ID:tax.uid_tax})
         }
        return res.status(200).send()
     }
    return res.status(401).send()
 }
 const build_generate_tax = async(req,res) => {
-  const {Tax_ID,customer,payment,id} = req.body
-  console.log(Tax_ID);
-  if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-    const customers = await db.Customer.findOne({where:{Cus_No : payment}})
-    const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{Tax_ID:Tax_ID},where:{Tax_ID:Tax_ID}})
-  
-                          await db.Building.update({Tax_ID:Tax_ID},{where:{Build_Id:id}})
-                          await db.Address.findOrCreate({where:{Tax_ID:tax.Tax_ID},defaults:{
-                            Num_House:customer.Num_House,Moo:customer.Moo,Road_Name:customer.Road_Name,Soi:customer.Soi,Tambol:customer.Tambol
-                            ,district_name:customer.district_name,Changwat:customer.Changwat,Post_No:customer.Post_No,Phone_no:customer.Phone_no
-                            ,Tax_ID:tax.Tax_ID}})
-      if(created)  {
-        await db.Building.update({Tax_ID:tax.Tax_ID},{where:{Build_Id:id}})
-        await db.Customer_has_tax.bulkCreate(customer)
-        await db.District_has_Tax.create({District_ID:req.user.DistrictDistrictNo,Tax_ID:tax.Tax_ID})
-        await db.Address.findOrCreate({where:{Tax_ID:tax.Tax_ID},defaults:{
-          Num_House:customer.Num_House,Moo:customer.Moo,Road_Name:customer.Road_Name,Soi:customer.Soi,Tambol:customer.Tambol
-          ,district_name:customer.district_name,Changwat:customer.Changwat,Post_No:customer.Post_No,Phone_no:customer.Phone_no
-          ,Tax_ID:tax.Tax_ID}})
+  const {uid_tax,land_id,customer_has_tax,customer,Category_Tax,Build_Id} = req.body
+  if (req.user.role === "leader" || req.user.role === "employee"){
+    console.log(req.body);
+    const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
+    await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}})
+    await db.Building.update({Build_Tax_ID:tax.uid_tax},{where:{Build_Id:Build_Id}})
+  // create true === uid_tax นี้ยังไม่มีในระบบ
+      if(created) { 
+        await db.Customer_has_tax.bulkCreate(customer_has_tax)
+        await db.Address.create({...customer,Address_Tax_ID:uid_tax})
       }
       return res.status(200).send()     
   }
@@ -51,22 +38,30 @@ const build_generate_tax = async(req,res) => {
 }
 const fetch_tax_id = async(req,res) => {
   const targetId = req.params.tax
-  if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-      const tax = await db.Tax_Group.findOne({where:{Tax_ID:targetId},include:[db.Land,db.Customer,db.Room,db.Address,{model:db.Building,include:db.RateOfBuilding}]})
+  if (req.user.role === "leader" || req.user.role === "employee"){
+      const tax = await db.Tax_Group.findOne({where:{uid_tax:targetId},include:[db.Land,db.Customer,db.Room,db.Address,{model:db.Building,include:db.RateOfBuilding}]})
      return res.status(200).send(tax)
   }
   return res.status(401).send()
 }
 const list_tax_id = async(req,res) => {
-  if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-    const taxs = await db.Tax_Group.findAll({include:{model:db.District,where:{District_no:req.user.DistrictDistrictNo}}})
-    res.status(200).send(taxs)
+  let {size,page} = req.query
+  if (req.user.role === "leader" || req.user.role === "employee"){
+    const taxs = await sequelize.query(`select  *,(select count(*) from customer C inner join customer_has_tax CT on C.id_customer= CT.Cus_No where CT.Customer_Tax_ID = T.uid_tax) as countCustomer 
+    ,(select count(*) from land L where L.Land_Tax_ID = T.uid_tax ) as countLand,
+    (select count(*) from building B where B.Build_Tax_ID = T.uid_tax) as countBuild ,
+    (select count(*) from room R where R.Room_Tax_ID = T.uid_tax)  as countRoom
+    from tax_group T 
+    where T.Tax_in_district = ${req.user.distict_id}
+    ; `,{type:QueryTypes.SELECT})
+    // const taxs = await db.Tax_Group.findAndCountAll({where:{Tax_in_district:req.user.distict_id},limit:10})
+   return res.status(200).send(taxs)
   }
-  res.status(401).send()
+  return  res.status(402).send()
 }
 const fetch_pds3_byIdTax = async(req,res) =>{
   const Tax_ID = req.params.id_tax
-  if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+  if (req.user.role === "leader" || req.user.role === "employee"){
 
       let pds3 = await db.Tax_Group.findOne({where:{Tax_ID:Tax_ID},include:[
           {
@@ -85,7 +80,7 @@ const fetch_pds3_byIdTax = async(req,res) =>{
 } 
 const fetch_pds7_byIdTax = async(req,res)=> {
   const Tax_ID = req.params.id_tax
-  if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+  if (req.user.role === "leader" || req.user.role === "employee"){
      
       const pds7 = await db.Tax_Group.findOne({where:{Tax_ID:Tax_ID},
         // require:true,
@@ -191,9 +186,7 @@ include:[
     }})
 res.send(selft)
 }
-const convertPDS =(useful,build)=>{
 
-}
 module.exports={
     generate_tax,
     build_generate_tax,

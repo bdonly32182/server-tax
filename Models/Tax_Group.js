@@ -5,10 +5,7 @@ module.exports=(sequelize,DataTypes) => {
             type:DataTypes.STRING(34),
             primaryKey:true
         },
-        Tax_ID:{
-            type:DataTypes.STRING(255),
-            // primaryKey:true
-        },
+       
         Category_Tax:{
             type:DataTypes.STRING(100)
         }

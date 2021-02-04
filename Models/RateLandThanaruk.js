@@ -48,33 +48,10 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.DOUBLE
 
         },
-        Mark:{
-            type:DataTypes.STRING(255)
-        },
-        totalPlace:{
-            type:DataTypes.DOUBLE,
-            set(value){
-                this.setDataValue('totalPlace',(this.RAI * 400) +(this.GNAN *100) + this.WA)
-            }
-        }
-        ,
-        Price:{
+        Price_thanaruk:{
             type:DataTypes.DOUBLE
-        },
-        Rate_Price_land:{
-            type:DataTypes.DOUBLE,
-            set(value) {
-                this.setDataValue('Rate_Price_land',this.Price * this.totalPlace)
-            }
         }
-        ,
-        Price_tanaruk:{
-            type:DataTypes.DOUBLE,
-            defaulValue:0
-        },
-        Payment_Cus:{
-            type:DataTypes.STRING(13)
-        }  
+        
     },{
         tableName:"rate_land_thanaruk"
     });

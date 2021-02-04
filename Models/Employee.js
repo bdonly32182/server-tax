@@ -23,8 +23,9 @@ module.exports=(sequelize,DataTypes)=>{
     })
     model.associate=models=>{
         model.hasOne(models.Employee_Login,{foreignKey:"employee_no"})
-        // model.hasOne(models.Role,{ForeignKey:"employee_no"})
         model.belongsTo(models.District,{foreignKey:"distict_id"})
+        model.hasMany(models.Working,{foreignKey:'Emp_ID'})
+
     }
     return model
 

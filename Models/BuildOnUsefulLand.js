@@ -6,7 +6,7 @@ module.exports=(sequelize,DataTypes)=>{
     });
     model.associate = models => {
         model.belongsTo(models.Building,{foreignKey:"Build_id_in_Useful"})
-        model.belongsTo(models.UsefulLand,{foreignKey:"Useful_land_id"})
+        model.belongsTo(models.UsefulLand,{foreignKey:"Useful_land_id",onDelete:'CASCADE'})
     }
     return model
 
