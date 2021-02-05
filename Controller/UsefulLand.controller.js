@@ -70,11 +70,30 @@ const deleteUseful = async(req,res) => {
 
     return res.status(403).send();
 }
-
+const SearchName = async(req,res) => {
+    let name = req.query.name
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        let customer = await db.Customer.findAll({where:{[Op.and]:[{Cus_Fname:{[Op.like]:`${name}%`}},{'$Tax_Groups.Category_Tax$':{[Op.ne]:"รัฐบาล"}}]},
+            include:{
+                model : db.Tax_Group,
+                include:db.Customer
+            },
+            attributes:['id_customer']
+    })
+        // let tax = await db.Tax_Group.findAll({
+        //     where:{'$Customers.Cus_Fname$':{[Op.like]:`${name}%`}},
+        //     include:{
+        //     model:db.Customer  Category_Tax
+        // }})
+        return res.status(200).send(customer)
+    }
+    return res.status(403).send();
+}
 module.exports ={
     createUsefulland,
     updateUseful,
     deleteUseful,
     UsefulInLand,
-    fecthUseful
+    fecthUseful,
+    SearchName
 }

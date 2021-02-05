@@ -59,10 +59,11 @@ const deleteLand = async(req,res)=>{
       let targetLand = req.params.id
       await sequelize.query(`delete from building B where B.Build_Id in( 
         select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id in(select U.useful_id from usefulLand U where U.Land_id ="${targetLand}"))`);
+      await sequelize.query(`delete from build_on_useful_land BL where BL.Useful_land_id in(select U.useful_id from usefulLand U where U.Land_id ="${targetLand}")`);
        await req.land.destroy() ;
        await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'แก้ไข้ข้อมูลแปลงที่ดิน',Category:6});
 
-       res.status(204).send(test)
+       res.status(204).send({msg:'delete success'})
     }
     res.status(401).send()
 }

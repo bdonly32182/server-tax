@@ -121,11 +121,13 @@ const updateBuild = async(req,res) => {
 }
 const deleteBuild = async(req,res) => {
     if (req.user.role=== "leader" || req.user.role === "employee"){
+        let target = req.params.b_id;
+        await db.BuildOnUsefulLand.destroy({where:{Build_id_in_Useful:target}})
        await req.building.destroy();
        await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'ลบสิ่งปลูกสร้าง',Category:9});
-
+        return res.status(204).send();
     }
-   return res.status(403).send()
+   return res.status(403).send();
 }
 const build_across_land =async(req,res)=>{
     if (req.user.role === "leader" || req.user.role === "employee"){

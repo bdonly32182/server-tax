@@ -7,4 +7,5 @@ module.exports = app =>{
     app.get('/api/read/usefuls',auth,useful.fecthUseful);
     app.put('/api/edit/useful/:u_id',auth,useful.updateUseful);
     app.delete('/api/delete/useful/:u_id',auth,useful.deleteUseful);
+    app.get('/api/search',auth,useful.SearchName);
 }

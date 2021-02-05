@@ -5,7 +5,7 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(255),
             defaultValue:'ว่างเปล่า'
         },
-        Empty_size:{
+        Empty_Size:{
             type:DataTypes.DOUBLE
         },
         Percent_Empty:{
