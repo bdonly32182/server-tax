@@ -20,11 +20,11 @@ module.exports=()=>{
     require('../Router/OwnerBuilding.route')(app);
     require('../Router/Condo.router')(app);
     require('../Router/Room.router')(app);
-    require('../Router/Tax.router')(app)
-    require('../Router/PDS3.router')(app)
-    require('../Router/PDS6.router')(app)
-    require('../Router/PDS7.router')(app)
-    require('../Router/PDS8.router')(app)
-
+    require('../Router/Tax.router')(app);
+    require('../Router/PDS3.router')(app);
+    require('../Router/PDS6.router')(app);
+    require('../Router/PDS7.router')(app);
+    require('../Router/PDS8.router')(app);
+    require('../Router/Type.router')(app);
     return app;
 }

@@ -1,62 +1,10 @@
 const db  = require('../Models');
 const Op = db.Sequelize.Op
-// const createBuild = async(req,res) => {
-//     const {Age_Build,Category,LandCodeLand,Build_Id,rating_id,Build_Total_Place} =req.body
-//     let bulkdata=[]
-//     console.log(Build_Id);
-//     await req.body.customer.map(cus=> bulkdata.push({Cus_No:cus.Cus_No,Build_Id}))
-//     if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-//         const rate_price = await db.RateOfBuilding.findOne({where:{Code:rating_id}})
-//         if (Age_Build >19 &&Category==="ไม้") {
-//             const [building,created] =await db.Building.findOrCreate({where:{Build_Id:Build_Id},defaults:{...req.body,Rate_Price_Build:Build_Total_Place*rate_price.Rate_Price,Cus_Payment:req.body.customer[0].Cus_No,Land_main:LandCodeLand}});
-//                 const depreciation = await db.BuildingDepreciation.findOne({where:{id:57}})    
-//             console.log(building);
-//             if (!created) return res.status(400).send() 
-//             await db.Build_And_Depreciation.create({Build_ID:building.Build_Id,Depreciate_ID:57,Price_depreciate:(building.Rate_Price_Build * depreciation.Percent)/100,  PriceAfterDepreciation:building.Rate_Price_Build})
-//             await db.UsefulType.create({building_id:building.Build_Id,...req.body})
-//             await db.OwnerBuilding.bulkCreate(bulkdata)
-//             await db.BuidOnLand.create({BuildingBuildId:building.Build_Id,LandCodeLand:LandCodeLand})
-//            return res.status(200).send({msg:`สร้างสิ่งปลูกสร้างเรียบร้อยแล้ว`})
+const { sequelize } = require('../Models')
+const {QueryTypes} = require('sequelize') 
 
-//         }
-//         if (Age_Build >21 && Category==="ครึ่งตึกครึ่งไม้") {
-//             const [building,created] =await db.Building.findOrCreate({where:{Build_Id:Build_Id},defaults:{...req.body,Rate_Price_Build:Build_Total_Place*rate_price.Rate_Price,Cus_Payment:req.body.customer[0].Cus_No,Land_main:LandCodeLand}});
-//             const depreciation = await db.BuildingDepreciation.findOne({where:{id:63}})    
-
-//             if (!created) return res.status(400).send()
-//             await db.Build_And_Depreciation.create({Build_ID:building.Build_Id,Depreciate_ID:63,Price_depreciate:(building.Rate_Price_Build * depreciation.Percent)/100,  PriceAfterDepreciation:building.Rate_Price_Build})
-
-//             await db.UsefulType.create({building_id:building.Build_Id,...req.body})
-//             await db.OwnerBuilding.bulkCreate(bulkdata)
-//             await db.BuidOnLand.create({BuildingBuildId:building.Build_Id,LandCodeLand:LandCodeLand})
-//            return res.status(200).send({msg:`สร้างสิ่งปลูกสร้างเรียบร้อยแล้ว`})
-
-//         }
-//         if (Age_Build >42 && Category==="ตึก") {
-//             const [building,created] =await db.Building.findOrCreate({where:{Build_Id:Build_Id},defaults:{...req.body,Rate_Price_Build:Build_Total_Place*rate_price.Rate_Price,Cus_Payment:req.body.customer[0].Cus_No,Land_main:LandCodeLand}});
-//             const depreciation = await db.BuildingDepreciation.findOne({where:{id:84}})    
-//             if (!created) return res.status(400).send()
-//             await db.Build_And_Depreciation.create({Build_ID:building.Build_Id,Depreciate_ID:84,Price_depreciate:(building.Rate_Price_Build * depreciation.Percent)/100,  PriceAfterDepreciation:building.Rate_Price_Build})
-//             await db.UsefulType.create({building_id:building.Build_Id,...req.body})
-//             await db.OwnerBuilding.bulkCreate(bulkdata)
-//             await db.BuidOnLand.create({BuildingBuildId:building.Build_Id,LandCodeLand:LandCodeLand})
-//            return res.status(200).send({msg:`สร้างสิ่งปลูกสร้างเรียบร้อยแล้ว`})
-
-//         }
-//         const depreciation = await db.BuildingDepreciation.findOne({where:{[Op.and]:[{Category:Category},{Age_Build:Age_Build}]}})    
-//         const [building,created] =await db.Building.findOrCreate({where:{Build_Id:Build_Id},defaults:{...req.body,Rate_Price_Build:Build_Total_Place*rate_price.Rate_Price,Cus_Payment:req.body.customer[0].Cus_No,Land_main:LandCodeLand}}); 
-//         if (!created) return res.status(400).send()
-//         await db.Build_And_Depreciation.create({Build_ID:building.Build_Id,Depreciate_ID:depreciation.id,Price_depreciate:(building.Rate_Price_Build * depreciation.Percent)/100,  PriceAfterDepreciation:building.Rate_Price_Build})
-//             await db.UsefulType.create({building_id:building.Build_Id,...req.body})
-//              await db.BuidOnLand.create({BuildingBuildId:building.Build_Id,LandCodeLand:LandCodeLand})
-//             await db.OwnerBuilding.bulkCreate(bulkdata)
-//            return res.status(200).send({msg:`สร้างสิ่งปลูกสร้างเรียบร้อยแล้ว`})
-
-//     }
-//    res.status(401).send()
-// }
 const createBuild = async(req,res) => {
-    const {Build_Id,Build_Total_Place,rating_id,usefulTypeAll,Percent_Age,useful_id} = req.body
+    const {Build_Id,Build_Total_Place,rating_id,usefulTypeAll,useful_id} = req.body
     if (req.user.role === "leader" || req.user.role === "employee") {
             const rate = await db.RateOfBuilding.findOne({where:{Code:rating_id}});
             const [building,created] = await db.Building.findOrCreate({where:{Build_Id:Build_Id},
@@ -73,16 +21,20 @@ const createBuild = async(req,res) => {
                 await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'สร้างสิ่งปลูกสร้าง',Category:7})
                 for (const useful of usefulTypeAll) {
                     if (useful.Farm_Size) {
-                        await db.FarmType.create(useful)
+                     let farm =  await db.FarmType.create(useful);
+                     await db.Useful_farm.create({Farm_ID:farm.id,Useful_farm_ID:useful_id});
                     }
                     if (useful.Live_Size) {
-                        await db.LiveType.create(useful)
+                     let live =  await db.LiveType.create(useful);
+                     await db.Useful_live.create({Live_ID:live.id,Useful_live_ID:useful_id});
                     }
                     if (useful.Other_Size) {
-                        await db.OtherType.create(useful)
+                      let other =  await db.OtherType.create(useful);
+                      await db.Useful_other.create({Other_ID:other.id,Useful_other_ID:useful_id});
                     }
                     if (useful.Empty_Size) {
-                        await db.EmptyType.create(useful)
+                      let empty =  await db.EmptyType.create(useful);
+                      await db.Useful_empty.create({Empty_ID:empty.id,Useful_empty_ID:useful_id});
                     }
                 }
             }
@@ -131,10 +83,34 @@ const deleteBuild = async(req,res) => {
 }
 const build_across_land =async(req,res)=>{
     if (req.user.role === "leader" || req.user.role === "employee"){
-    await db.BuidOnLand.create(req.body)
-    return res.status(200).send()
+        const {obj_useful,ArrType} = req.body
+     let land = await   sequelize.query(`select sum(U.Place) as usefulTotalPlace,L.totalPlace from land L left join usefulLand U on L.code_land = U.Land_id 
+        where L.code_land ="${obj_useful.Land_id}"`,{type:QueryTypes.SELECT});
+        let balancePlace = land[0].totalPlace - land[0].usefulTotalPlace; //พื้นที่ที่เหลือให้ใช้งาน
+        console.log(req.body);
+
+        if (obj_useful.Place <= balancePlace) { //เช็คก่อนว่าพื้นที่เหลือให้สร้างมั้ย
+         let new_useful =   await db.UsefulLand.create(obj_useful)
+            for (const useful of ArrType) {
+                if (useful.Farm_Size) {
+                    await db.Useful_farm.create({Farm_ID:useful.id,Useful_farm_ID:new_useful.useful_id});
+                }
+                if (useful.Live_Size) {
+                    await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id});
+                }
+                if (useful.Other_Size) {
+                    await db.Useful_other.create({Other_ID:useful.id,Useful_other_ID:new_useful.useful_id});
+                }
+                if (useful.Empty_Size) {
+                    await db.Useful_empty.create({Empty_ID:useful.id,Useful_empty_ID:new_useful.useful_id});
+                }
+            }
+            return res.status(200).send({msg:'สร้างสัดส่วนสิ่งปลูกสร้างที่คร่อมแปลงเรียบร้อยแล้ว'})
+        }
+        return res.status(203).send({msg:`พื้นที่รหัสแปลงที่ดิน ${obj_useful.Land_id} ไม่เพียงพอ`})
+    
     }
-    return res.status(401).send()
+    return res.status(403).send()
 }
 const cancle_build_across = async (req,res) => {
     if (req.user.role === "leader" || req.user.role === "employee"){

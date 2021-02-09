@@ -72,11 +72,12 @@ const search_parcel = async(req,res)=>{
 
         const parcel = req.params.parcel
         const land = await db.Land.findAll({
-            where:{Parcel_No:parcel}
+            where:{[Op.and]:[{Parcel_No:parcel},{distict_id:req.user.distict_id}]},
+            include:[db.UsefulLand,db.Tax_Group]
         })
-      return  res.status(201).send(land)
+      return  res.status(200).send(land)
     }
-    return res.status(401).send()
+    return res.status(403).send()
 }
 const LandById = async(req,res,next,id) =>{
   const fetchLand =   await db.Land.findOne({where:{code_land:id}}) 

@@ -5,6 +5,7 @@ const {QueryTypes} = require('sequelize')
 const generate_tax = async(req,res) => {
     const {uid_tax,land_id,customer_has_tax,customer,Category_Tax} = req.body
     if (req.user.role === "leader" || req.user.role=== "employee"){
+      console.log(uid_tax);
         const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
           await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}});
           await db.Land.update({Land_Tax_ID:tax.uid_tax},{where:{code_land:land_id}});
@@ -62,21 +63,24 @@ const list_tax_id = async(req,res) => {
 const fetch_pds3_byIdTax = async(req,res) =>{
   const Tax_ID = req.params.id_tax
   if (req.user.role === "leader" || req.user.role === "employee"){
-
-      let pds3 = await db.Tax_Group.findOne({where:{Tax_ID:Tax_ID},include:[
-          {
-              model:db.Land,
-              include:{model:db.UsefulLand,include:[{model:db.Building,include:[{model:db.UsefulType},db.RateOfBuilding],
-              attributes:['No_House','Category','Age_Build','Mark','Build_Total_Place']
-          }]}
-          },
-          {
-              model:db.Customer
-          }
-      ]})
-      res.send(pds3)
+  // $BuildOnUsefulLands.Building.Build_Tax_ID$ เอาตามรูปแบบของ json
+  // or Build_tax_ID เพราะว่า จะทำให้มันคิวรี่ได้มาทั้ง สิ่งปลูกสร้าง และ การใช้ประโยชน์ แล้วเราค่อยไป where สิ่งปลูกสร้างอีกที
+    let pds3 = await db.UsefulLand.findAll({where:{[Op.or]:[{UsefulLand_Tax_ID:Tax_ID},{"$BuildOnUsefulLands.Building.Build_Tax_ID$":Tax_ID}]},
+    include:[
+      {
+        model:db.BuildOnUsefulLand,
+        include:{
+          model:db.Building,
+          include:[db.RateOfBuilding,db.LiveType,db.FarmType,db.EmptyType,db.OtherType],
+          where:{Build_Tax_ID:Tax_ID}//เอาแค่สิ่งปลูกสร้างที่ไอดีแท็กนี้เท่านั้น
+        }
+      },
+      db.Land
+    ]});
+     return res.status(200).send(pds3);
   }
-  res.status(401).send()
+  
+ return res.status(403).send();
 } 
 const fetch_pds7_byIdTax = async(req,res)=> {
   const Tax_ID = req.params.id_tax
@@ -126,73 +130,12 @@ const fetch_pds7_byIdTax = async(req,res)=> {
   }
   res.status(401).send()
 }
-const text_tax = async(req,res) => {
-  const Tax_ID = req.params.t_id
-  
-// let test2 = await db.Tax_Group.findAll({where:{Tax_ID:req.params.t_id},
-//             attributes:['Tax_ID'],
-//             include:
-//             {
-//               model:db.Land,
-//               attributes:['code_land','Category_doc','Parcel_No','Price','Rate_Price_land','Payment_Cus'],
-//               include:[{
-//                 model:db.UsefulLand,
-//                 attributes:['Useful_RAI','Useful_GNAN','Useful_WA','Place','id'],
-//                 include:[{
-//                     model:db.Building,
-//                     attributes:['Build_Id',[sequelize.fn('sum',sequelize.col('PriceAfterDepreciation')),'Total_Price_Build_In_Land']],
-//                     include:[
-//                         {
-//                             model:db.BuildingDepreciation
-//                         },
-//                         {
-//                           model:db.UsefulType
-//                         }
-//                       ]
-//                 }]
-                
-//               },
-//               {
-//                 model:db.NextTo
-//               }]
-//             },
-//             group:['Lands.UsefulLands.id'],
-//             raw:true,
-
-//     })
-let test = await db.UsefulLand.findAll({where:{Tax:Tax_ID},
-  attributes:['id',[sequelize.fn('sum',sequelize.col('PriceAfterDepreciation')),'TotalPriceOFbuild']],
-
-include:[
-      {
-        model:db.Building,
-        attributes:['Build_Id','useful_land_id','Tax_ID'],
-        // where:{Tax_ID:Tax_ID},
-        include:{
-       
-        model:db.BuildingDepreciation
-      },
-    
-    }
-    ],
-    group:['id'],
-    raw:true,
-    separate:true
-   
-  })
-    let selft = await db.UsefulLand.findAll({where:{Tax:Tax_ID},include:{
-      model :db.UsefulLand,
-      as :'nexto'
-    }})
-res.send(selft)
-}
 
 module.exports={
     generate_tax,
     build_generate_tax,
     fetch_tax_id,
     list_tax_id,
-    text_tax,
     fetch_pds3_byIdTax,
     fetch_pds7_byIdTax
 }

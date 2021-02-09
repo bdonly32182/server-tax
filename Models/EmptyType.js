@@ -17,6 +17,8 @@ module.exports=(sequelize,DataTypes)=>{
     });
     model.associate = models =>{
         model.belongsTo(models.Building,{foreignKey:"Build_empty_ID"})
+        model.belongsToMany(models.UsefulLand,{through:models.Useful_empty,foreignKey:"Empty_ID"});
+
     }
     return model
 }

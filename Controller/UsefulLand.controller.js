@@ -21,26 +21,53 @@ const updateUseful = async(req,res) => {
 }
 const fecthUseful = async(req,res) => {
     let useful_id = req.query.useful_id
-    let Land_id = req.query.Land_id
+    // let Land_id = req.query.Land_id
     if (req.user.role === "leader" || req.user.role === "employee"){
-        let useful = await db.UsefulLand.findOne({where:{[Op.and]:[{Land_id:Land_id},{useful_id:useful_id}]},
+        let useful = await db.UsefulLand.findOne({where:{useful_id:useful_id},
                 include:[
                     {
                         model:db.BuildOnUsefulLand,
                         include:{
                             model:db.Building,
-                            include:[db.RateOfBuilding,db.LiveType,db.FarmType,db.EmptyType,db.OtherType,{
-                                model:db.Tax_Group,
-                                include:[db.Customer]
-                            },
-                            {
-                                model:db.BuildOnUsefulLand,
-                                include:[db.UsefulLand]
-                            }
-                            ]
+                            include:[db.RateOfBuilding,                              
+                                    db.LiveType, db.FarmType,db.EmptyType,db.OtherType,
+                                    {
+                                        // ผู้เสียภาษี
+                                        model:db.Tax_Group,
+                                        include:[db.Customer]
+                                    },
+                                    {//คร่อมแปลง เพื่อเอาไปเซ็ทรหัสการใช้ประโยชน์
+                                        model:db.BuildOnUsefulLand,
+                                        include:[db.UsefulLand]
+                                    }
+                                    ]
                         }
+                    },
+                    {model:db.LiveType,//เอาไปทำสัดส่วน
+                        include:[{
+                            model:db.Building,
+                            attributes:['No_House']
+                        }]
+                    },
+                    {model:db.FarmType,
+                        include:[{
+                            model:db.Building,
+                            attributes:['No_House']
+                        }]
+                    },
+                    {model:db.EmptyType,
+                        include:[{
+                            model:db.Building,
+                            attributes:['No_House']
+                        }]
+                    },
+                    {model:db.OtherType,
+                        include:[{
+                            model:db.Building,
+                            attributes:['No_House']
+                        }]
                     }
-            ]
+                ]
         });
        return res.status(200).send(useful);
     }
@@ -59,8 +86,7 @@ const deleteUseful = async(req,res) => {
     if (req.user.role === "leader" || req.user.role === "employee"){
         let targetUseful = req.params.u_id;
         await sequelize.query(`delete  from building B where B.Build_Id in( 
-            select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id = 'A001-01')`)
-        // await db.Building.destroy({where:{Build_Id:{[Op.in]:sequelize.query(`select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id = '${targetUseful}'`,{type:QueryTypes.SELECT})}}})
+            select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id = '${targetUseful}')`)
         await db.BuildOnUsefulLand.destroy({where:{Useful_land_id:targetUseful}})
         await db.UsefulLand.destroy({where:{useful_id:targetUseful}});
        return res.status(204).send({msg:`delete useful success`});
@@ -83,7 +109,7 @@ const SearchName = async(req,res) => {
         // let tax = await db.Tax_Group.findAll({
         //     where:{'$Customers.Cus_Fname$':{[Op.like]:`${name}%`}},
         //     include:{
-        //     model:db.Customer  Category_Tax
+        //     model:db.Customer  
         // }})
         return res.status(200).send(customer)
     }

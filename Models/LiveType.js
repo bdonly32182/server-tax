@@ -19,7 +19,9 @@ module.exports=(sequelize,DataTypes)=>{
         tableName:"live_type"
     });
     model.associate = models =>{
-        model.belongsTo(models.Building,{foreignKey:"Build_live_ID"})
+        model.belongsTo(models.Building,{foreignKey:"Build_live_ID"});
+        model.belongsToMany(models.UsefulLand,{through:models.Useful_live,foreignKey:"Live_ID"});
+
     }
     return model
 }
