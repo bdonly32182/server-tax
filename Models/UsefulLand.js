@@ -40,6 +40,16 @@ module.exports=(sequelize,DataTypes)=>{
         Percent:{
             type:DataTypes.INTEGER,
             defaultValue:100
+        },
+        isAccross:{
+            //ถ้าเป็นทรู จะไม่สามารถสร้างสิ้งปลูกสร้างได้
+            type:DataTypes.BOOLEAN,
+            defaultValue:false
+        },
+        isNexto:{
+            //ถ้าเป็น ทรู ไม่ต้องออกค่าภาษีคงเหลือ ให้ไปรวมกับแปลงที่ติดกัน
+            type:DataTypes.BOOLEAN,
+            defaultValue:false
         }
         
     },{
@@ -52,8 +62,9 @@ module.exports=(sequelize,DataTypes)=>{
         model.belongsToMany(models.FarmType,{through:models.Useful_farm,foreignKey:"Useful_farm_ID"});
         model.belongsToMany(models.EmptyType,{through:models.Useful_empty,foreignKey:"Useful_empty_ID"});
         model.belongsToMany(models.OtherType,{through:models.Useful_other,foreignKey:"Useful_other_ID"});
-        model.hasMany(models.UsefulLand,{as:'Children',foreignKey:'Nexto_Id'});
+        model.belongsToMany(models.UsefulLand,{as:'Useful',through: 'Nexto_Useful',foreignKey:'Useful_ID' });
         model.belongsTo(models.Tax_Group,{foreignKey:'UsefulLand_Tax_ID'})
+
     }
     return model
 }

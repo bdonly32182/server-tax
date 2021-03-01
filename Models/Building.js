@@ -39,16 +39,16 @@ module.exports=(sequelize,DataTypes)=>{
             set(value){
                 //เมื่ออัตราเปอร์เซ็นความเสื่อมเป็น ตลอดอายุการใช้งานแล้ว font-end จะส่งค่าเป็น 0 มาให้
                 if (value === 0&&this.StyleBuilding ==="ไม้" && this.Age_Build >18) {
-                    this.setDataValue('Percent_Age',93)
+                  return  this.setDataValue('Percent_Age',93)
                 }
                 if (value === 0&&this.StyleBuilding ==="ตึก" && this.Age_Build >42) {
-                    this.setDataValue('Percent_Age',76)
+                   return this.setDataValue('Percent_Age',76)
                 }
                 if (value === 0&&this.StyleBuilding ==="ครึ่งตึกครึ่งไม้" && this.Age_Build >21) {
-                    this.setDataValue('Percent_Age',85)
+                   return this.setDataValue('Percent_Age',85)
                 }
                 //เมื่อไม่เข้าเงื่อนไขทั้งหมดข้างบน ให้เซ็ทเปอร์เซ็นเท่ากับค่าที่ให้มา
-                 this.setDataValue('Percent_Age',value)
+                return this.setDataValue('Percent_Age',value)
             }
         },
         PriceDepreciation:{

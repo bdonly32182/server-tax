@@ -1,7 +1,7 @@
 const db = require('../Models')
 const Op = db.Sequelize.Op
 const {QueryTypes} = require('sequelize') 
-const { sequelize } = require('../Models')
+const { sequelize, Sequelize } = require('../Models')
 
 const createUsefulland = async(req,res) =>{
     if (req.user.role === "leader" || req.user.role === "employee"){
@@ -21,10 +21,18 @@ const updateUseful = async(req,res) => {
 }
 const fecthUseful = async(req,res) => {
     let useful_id = req.query.useful_id
-    // let Land_id = req.query.Land_id
     if (req.user.role === "leader" || req.user.role === "employee"){
         let useful = await db.UsefulLand.findOne({where:{useful_id:useful_id},
                 include:[
+                    {
+                        model:db.UsefulLand,
+                        as:'Useful',
+                        include:{
+                            model:db.Land,
+                            // where:{code_land:{[Op.ne]:Sequelize.col('Land_id')}},
+                            attributes:['Parcel_No','Land_No','Survey_No']
+                        }
+                    },
                     {
                         model:db.BuildOnUsefulLand,
                         include:{
@@ -42,7 +50,7 @@ const fecthUseful = async(req,res) => {
                                     }
                                     ]
                         }
-                    },
+                    },{model:db.UsefulLand,as:'Useful'},
                     {model:db.LiveType,//เอาไปทำสัดส่วน
                         include:[{
                             model:db.Building,
@@ -69,9 +77,10 @@ const fecthUseful = async(req,res) => {
                     }
                 ]
         });
+       
        return res.status(200).send(useful);
     }
-    res.status(402).send()
+   return res.status(402).send()
 }
 const UsefulInLand = async(req,res) => {
     if (req.user.role === "leader" || req.user.role === "employee"){
@@ -87,11 +96,10 @@ const deleteUseful = async(req,res) => {
         let targetUseful = req.params.u_id;
         await sequelize.query(`delete  from building B where B.Build_Id in( 
             select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id = '${targetUseful}')`)
-        await db.BuildOnUsefulLand.destroy({where:{Useful_land_id:targetUseful}})
+        await db.BuildOnUsefulLand.destroy({where:{Useful_land_id:targetUseful}});
+        // await db.Building.destroy({where:{on_useful_id:targetUseful}});
         await db.UsefulLand.destroy({where:{useful_id:targetUseful}});
        return res.status(204).send({msg:`delete useful success`});
-    
-
     }
 
     return res.status(403).send();
@@ -115,11 +123,62 @@ const SearchName = async(req,res) => {
     }
     return res.status(403).send();
 }
+const UsefulSameTax = async(req,res) => {
+    let targetTax = req.params.taxID
+    let useful_id = req.query.useful_id
+    let TypeName = req.query.TypeName
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        let useful = await db.UsefulLand.findAll({where:{[Op.and]:[{UsefulLand_Tax_ID:targetTax},{useful_id:{[Op.ne]:useful_id}},{TypeName:{[Op.eq]:TypeName}}]},
+            include:{
+            model:db.Land,
+            // where:{code_land:{[Op.ne]:Sequelize.col('Land_id')}},
+            attributes:['Parcel_No','Land_No','Survey_No']
+        }});
+        res.status(200).send(useful);
+    }
+    return res.status(403).send();
+}
+const selectNexto = async(req,res)=> {
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        const {Useful_ID,UsefulUsefulId} = req.body
+        let [nexto,created] = await db.Nexto_Useful.findOrCreate({defaults:req.body,where:{[Op.and]:[{Useful_ID},{UsefulUsefulId}]}})
+        if (created) {
+            await db.UsefulLand.update({isNexto:true,marks:`เป็นการใช้ประโยชน์ติดกันกับ ${Useful_ID}`},{where:{useful_id:UsefulUsefulId}});
+        }
+        return res.status(200).send();
+    } 
+    return res.status(402).send();
+}
+const onDeleteNexto =async(req,res)=>{
+    let targetId = req.params.id
+    let nexto_id = req.query.nexto_id
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        await db.Nexto_Useful.destroy({where:{[Op.and]:[{Useful_ID:targetId},{UsefulUsefulId:nexto_id}]}});
+        await db.UsefulLand.update({marks:''},{where:{useful_id:nexto_id}})
+       return res.status(200).send();
+    }
+    return res.status(402).send();
+}
+const testUseful = async(req,res) => {
+    let useful_id = req.params.id_useful
+    let useful = await db.UsefulLand.findAll({where:{useful_id:useful_id},include:[
+        {
+            model:db.UsefulLand,
+            as:'Useful'
+        } //as ต้องตรงกับใน model
+    ]})
+    
+    res.status(200).send(useful)
+}
 module.exports ={
     createUsefulland,
     updateUseful,
     deleteUseful,
     UsefulInLand,
     fecthUseful,
-    SearchName
+    SearchName,
+    UsefulSameTax,
+    testUseful,
+    selectNexto,
+    onDeleteNexto
 }

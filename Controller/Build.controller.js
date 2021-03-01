@@ -12,6 +12,7 @@ const createBuild = async(req,res) => {
                     Build_in_district:req.user.distict_id,
                     PriceDepreciation:0,
                     AfterPriceDepreciate:0
+                    
                 }});
             if (created) {
                 await db.BuildOnUsefulLand.create({
@@ -90,7 +91,7 @@ const build_across_land =async(req,res)=>{
         console.log(req.body);
 
         if (obj_useful.Place <= balancePlace) { //เช็คก่อนว่าพื้นที่เหลือให้สร้างมั้ย
-         let new_useful =   await db.UsefulLand.create(obj_useful)
+         let new_useful =   await db.UsefulLand.create({...obj_useful,isAccross:true})
             for (const useful of ArrType) {
                 if (useful.Farm_Size) {
                     await db.Useful_farm.create({Farm_ID:useful.id,Useful_farm_ID:new_useful.useful_id});
@@ -112,13 +113,7 @@ const build_across_land =async(req,res)=>{
     }
     return res.status(403).send()
 }
-const cancle_build_across = async (req,res) => {
-    if (req.user.role === "leader" || req.user.role === "employee"){
-        await db.BuidOnLand.destroy({where:{[Op.and]:[{BuildingBuildId},{LandCodeLand}]}})
-        return res.status(204).send()
-    }
-    return res.status(401).send()
-}
+
 const BuildById = async(req,res,next,b_id) =>{
     const build = await db.Building.findOne({where:{Build_Id:b_id}});
     req.building = build;
@@ -131,6 +126,5 @@ module.exports = {
     createBuild,
     updateBuild,
     deleteBuild,
-    build_across_land,
-    cancle_build_across
+    build_across_land
 }

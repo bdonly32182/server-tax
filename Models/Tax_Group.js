@@ -8,6 +8,11 @@ module.exports=(sequelize,DataTypes) => {
        
         Category_Tax:{
             type:DataTypes.STRING(100)
+        },
+        exceptEmergency:{
+            //การได้รับยกเว้นภาษีกรณีฉุกเฉิน เช่น มีโรคระบาด และได้รับส่วนลด 90 %
+            type:DataTypes.INTEGER,
+            defaultValue:0
         }
     },{
         tableName:"tax_group"

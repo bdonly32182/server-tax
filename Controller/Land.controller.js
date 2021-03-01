@@ -48,7 +48,15 @@ const editLand = async(req,res)=>{
             await db.Land.update(req.body,{
             where:{code_land:req.land.code_land}
         })
+        //{Land_id:req.body.code_land}
         await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'แก้ไข้ข้อมูลแปลงที่ดิน',Category:5})
+        if (req.land.Price !== req.body.Price) {
+          let usefulLand =await db.UsefulLand.findAll({where:{Land_id:req.body.code_land}})
+          for (const useful of usefulLand) {
+            await db.UsefulLand.update({Place:useful.Place,PriceUseful:req.body.Price},{where:{useful_id:useful.useful_id}});
+          }
+        }
+       
       return  res.status(201).send({msg:"คุณแก้ไข้ข้อมูลที่ดินเรียบร้อยแล้ว"}) 
     }
    return res.status(401).send()
@@ -59,13 +67,14 @@ const deleteLand = async(req,res)=>{
       let targetLand = req.params.id
       await sequelize.query(`delete from building B where B.Build_Id in( 
         select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id in(select U.useful_id from usefulLand U where U.Land_id ="${targetLand}"))`);
-      await sequelize.query(`delete from build_on_useful_land BL where BL.Useful_land_id in(select U.useful_id from usefulLand U where U.Land_id ="${targetLand}")`);
+
+      await sequelize.query(`delete from build_on_useful_land BL where BL.Useful_land_id in(select   U.useful_id from usefulLand U where U.Land_id ="${targetLand}")`);
        await req.land.destroy() ;
        await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'แก้ไข้ข้อมูลแปลงที่ดิน',Category:6});
 
-       res.status(204).send({msg:'delete success'})
+      return res.status(204).send({msg:'delete success'})
     }
-    res.status(401).send()
+   return res.status(401).send()
 }
 const search_parcel = async(req,res)=>{
     if (req.user.role === "leader" || req.user.role === "employee"){

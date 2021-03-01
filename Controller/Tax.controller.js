@@ -2,6 +2,16 @@ const db = require("../Models")
 const Op = db.Sequelize.Op
 const sequelize = db.sequelize
 const {QueryTypes} = require('sequelize') 
+const { Sequelize } = require("../Models")
+const exceptEmegency=async(req,res)=>{
+  let {exceptEmegency} =req.body
+  if (req.user.role === "leader" || req.user.role=== "employee"){
+
+    await db.Tax_Group.update({exceptEmergency:exceptEmegency},{where:{Tax_in_district:req.user.distict_id}});
+     return res.status(200).send()
+  }
+ return res.status(401).send()
+}
 const generate_tax = async(req,res) => {
     const {uid_tax,land_id,customer_has_tax,customer,Category_Tax} = req.body
     if (req.user.role === "leader" || req.user.role=== "employee"){
@@ -83,59 +93,185 @@ const fetch_pds3_byIdTax = async(req,res) =>{
  return res.status(403).send();
 } 
 const fetch_pds7_byIdTax = async(req,res)=> {
-  const Tax_ID = req.params.id_tax
+  const Tax_ID = req.params.id_tax;
   if (req.user.role === "leader" || req.user.role === "employee"){
-     
-      const pds7 = await db.Tax_Group.findOne({where:{Tax_ID:Tax_ID},
-        // require:true,
-        include:
-        [{model:db.Land,attributes:['Category_doc','Parcel_No','RAI','GNAN','WA','Price','totalPlace','Rate_Price_land','Serial_code_land'],
-                include:{model:db.UsefulLand,
-                  // require:true,
-                  include:{
-                    model:db.Building,
-                    // require:true,
-                    where:{Tax_ID:Tax_ID},
-                    
-                    attributes:['No_House','Category','Rate_Price_Build','Build_Total_Place','Age_Build'],
-                    include:[db.RateOfBuilding,db.BuildingDepreciation,db.UsefulType,db.Land]
-
-                  }
-                }
-        },
-        {
+    let newPDS7 = [];
+    let pds7 = await db.UsefulLand.findAll({where:{[Op.or]:[{UsefulLand_Tax_ID:Tax_ID},{"$BuildOnUsefulLands.Building.Build_Tax_ID$":Tax_ID}]},
+    include:[
+      {
+        model:db.BuildOnUsefulLand,
+        include:{
           model:db.Building,
-          attributes:['No_House','Category','Rate_Price_Build','Build_Total_Place','Age_Build'],
-          include:[db.RateOfBuilding,db.BuildingDepreciation,db.UsefulType,{model:db.UsefulLand,include:[
-              {
-              model:db.Land,
-              attributes:['Category_doc','Parcel_No']
-              }
-          ]}]
-
-        },
-      ]
-      })
-      // let pds7 = await sequelize.query(`SELECT   B.Build_Id ,U.Useful_RAI,U.Useful_GNAN,U.Useful_WA,L.code_Land,L.Category_doc,L.Parcel_No,B.No_House,B.Category,B.Width,B.Length,B.Rate_Price_Build,B.Build_Total_Place,L.Serial_code_land,
-      //                       U.LandCodeLand,LB.BuildingBuildId ,LB.LandCodeLand,L.Tax_ID AS Land_Tax , B.Tax_ID AS Building_Tax,BD.Build_Id AS DepreBuild_ID,BD.Price_depreciate,BD.PriceAfterDepreciation,BD.Depreciate_ID,U.id,L.Rate_Price_land
-      //                       FROM Land L 
-      //                       LEFT JOIN build_on_land LB ON L.code_land = LB.LandCodeLand LEFT JOIN Building B ON B.Build_Id = LB.BuildingBuildId 
-      //                       LEFT JOIN build_own_depreciation BD ON BD.Build_Id = B.Build_Id
-      //                       LEFT JOIN UsefulLand U ON L.code_land = U.LandCodeLand AND B.useful_land_id = U.id
-      //                       WHERE L.Tax_ID =${Tax_ID} OR B.Tax_ID =${Tax_ID}
-                           
-      //                       ` )
-      
-      res.status(200).send(pds7)
+          include:[db.RateOfBuilding,db.LiveType,db.FarmType,db.EmptyType,db.OtherType],
+          where:{Build_Tax_ID:Tax_ID},//เอาแค่สิ่งปลูกสร้างที่ไอดีแท็กนี้เท่านั้น
+          // attributes:[ 'AfterPriceDepreciate',[Sequelize.fn('SUM',Sequelize.col('BuildOnUsefulLands.Building.AfterPriceDepreciate')),'totalBuildPrice']],
+        }
+      },
+      db.Land,
+        {model:db.LiveType,//เอาไปทำสัดส่วน
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id','Build_Tax_ID'],             
+          }]
+      },
+      {model:db.FarmType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      },
+      {model:db.EmptyType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      },
+      {model:db.OtherType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      }
+    ],
+    attributes:['useful_id','Useful_RAI','Useful_GNAN','Useful_WA','PriceUseful','Place','TypeName','UsefulLand_Tax_ID','Percent','Special_Useful']
+    
+  });
+  for (let useful of pds7) {
+    let total = useful.BuildOnUsefulLands.reduce((pre,{Building:{AfterPriceDepreciate}}) =>pre+AfterPriceDepreciate,0);
+     // useful.totalPriceBuild = total;
+     if (useful.UsefulLand_Tax_ID === Tax_ID) {
+       let newUseful = {useful,PriceBuildAnduseful:useful.PriceUseful +total}
+        newPDS7.push(newUseful)
+     }else{
+      let newUseful = {useful,PriceBuildAnduseful:total}
+      newPDS7.push(newUseful)
+     }
+     
+ }
+     return res.status(200).send(newPDS7);
   }
-  res.status(401).send()
+ return res.status(401).send();
 }
+const test= async(req,res)=>{
+  const Tax_ID = req.params.id_tax;
+   db.UsefulLand.findAll({where:{[Op.or]:[{UsefulLand_Tax_ID:Tax_ID},{"$BuildOnUsefulLands.Building.Build_Tax_ID$":Tax_ID}]},
+    include:[
+      {
+        model:db.BuildOnUsefulLand,
+        include:{
+          model:db.Building,
+          include:[db.RateOfBuilding,db.LiveType,db.FarmType,db.EmptyType,db.OtherType],
+          where:{Build_Tax_ID:Tax_ID},//เอาแค่สิ่งปลูกสร้างที่ไอดีแท็กนี้เท่านั้น
+          // attributes:[ 'AfterPriceDepreciate',[Sequelize.fn('SUM',Sequelize.col('BuildOnUsefulLands.Building.AfterPriceDepreciate')),'totalBuildPrice']],
+        }
+      },
+      db.Land,
+        {model:db.LiveType,//เอาไปทำสัดส่วน
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id'],             
+          }]
+      },
+      {model:db.FarmType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      },
+      {model:db.EmptyType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      },
+      {model:db.OtherType,
+          include:[{
+              model:db.Building,
+              attributes:['No_House','Build_Id']
+          }]
+      }
+    ],
+    attributes:['useful_id','Useful_RAI','Useful_GNAN','Useful_WA','PriceUseful','Place','TypeName','UsefulLand_Tax_ID','Percent']
+  
+  }).then(async(result)=>{
+    let arr = [];
+    
+    for (let useful of result) {
+       let total = useful.BuildOnUsefulLands.reduce((pre,{Building:{AfterPriceDepreciate}}) =>pre+AfterPriceDepreciate,0);
+       if (useful.UsefulLand_Tax_ID === Tax_ID) {
+         //ที่ดินและสิ่งปลูกสร้างคนเดียวกัน
+        let newUseful = {useful,PriceBuildAnduseful:useful.PriceUseful +total}
+        let testPro = proportionType(useful,useful.PriceUseful +total)
+        arr.push(testPro)
+        //  newPDS7.push(newUseful)
+      }else{
+        //สิ่งปลูกสร้างอย่าวเดียว
+       let newUseful = {useful,PriceBuildAnduseful:total}
+       let testPro = proportionType(useful,total)
 
+       arr.push(testPro)
+
+      //  newPDS7.push(newUseful)
+      }
+    }
+     return res.status(200).send(
+       arr
+     );
+  });
+
+    
+  
+}
+const proportionType = (record =[],totalBuildAndUseful=0) => {
+  let totalPercent = record.BuildOnUsefulLands.length * 100||100 //ให้ แบ็คเอน ทำให้
+  /*totalPercent === 0 || 100 คือ กรณีไม่มีสิ่งปลูกสร้างบนการใช้ประโยชน์ เช่น การใช้ประโยชน์เกษตร ที่ไม่มีสิ่งปลูกสร้าง 
+  กรณี เป็นแปลงที่ถูกคร่อมมา  หรือ สิ่งปลูกสร้างคนละเจ้าของ จะมีสัดส่วนบนแปลงที่ดิน ทุกประเภทจะมีแค่อน่างละ อันเท่านั้น
+  กรณีที่การใช้ประโยชน์หลายประเภทจะต้องมีสิ่งปลูกสร้างด้วย 
+  ทุกกรณีนี้จะถูกเซ็ตเปอร์เซ็นให้เป็นหนึ่งร้อย
+  */
+ if (record.BuildOnUsefulLands.length >0) {//กรณีมีสิ่งปลุกสร้าง
+     return record.BuildOnUsefulLands.map((build,i)=>{
+         return (
+           build.Building.LiveType?{...build.Building.LiveType.dataValues,price:(build.Building.LiveType.Percent_Live * Number(totalBuildAndUseful)) / totalPercent}:null,             
+          build.Building.OtherType?{...build.Building.OtherType.dataValues,price:(build.Building.OtherType.Percent_Other * Number(totalBuildAndUseful)) / totalPercent}:null   ,        
+          build.Building.FarmType?{...build.Building.FarmType.dataValues,price:(build.Building.FarmType.Percent_Farm * Number(totalBuildAndUseful)) / totalPercent}:null,                  
+          build.Building.EmptyType?{...build.Building.EmptyType.dataValues,price:(build.Building.EmptyType.Percent_Empty * Number(totalBuildAndUseful)) / totalPercent} :null 
+                  )
+                  
+
+                     
+     })
+     
+ }
+  if (record.LiveTypes.length === 0 &&record.OtherTypes.length === 0&& record.FarmTypes.length === 0&& record.EmptyTypes.length === 0) {
+         //ไม่มีอะไรเลยทั้งสิ่งปลูกสร้าง บนแปลง และ คร่อมแปลง
+         return {none :totalBuildAndUseful}
+              
+  }else{
+      //กรณีที่ไม่มีสิ่งปลูกสร้าง แต่มีสัดส่วน ก็คือมีสิ่งปลูกสร้างคร่อมแปลงมา
+      return (
+                 
+                 record.LiveTypes.length>0?{...record.LiveTypes[0].dataValues,price:(record.LiveTypes[0].Percent_Live * Number(totalBuildAndUseful)) / totalPercent}:null,
+                  
+                 record.OtherTypes.length>0?{...record.OtherTypes[0].dataValues,price:(record.OtherTypes[0].Percent_Other * Number(totalBuildAndUseful)) / totalPercent}:null ,           
+                  
+                 record.FarmTypes.length>0?{...record.FarmTypes[0].dataValues,price:(record.FarmTypes[0].Percent_Farm * Number(totalBuildAndUseful)) / totalPercent}:null,
+                 
+                 record.EmptyTypes.length>0?{...record.EmptyTypes[0].dataValues,price:(record.EmptyTypes[0].Percent_Empty * Number(totalBuildAndUseful)) / totalPercent}:null  
+              )
+      
+  }
+  
+ 
+  
+}
 module.exports={
     generate_tax,
     build_generate_tax,
     fetch_tax_id,
     list_tax_id,
     fetch_pds3_byIdTax,
-    fetch_pds7_byIdTax
+    fetch_pds7_byIdTax,
+    test,
+    exceptEmegency
 }
