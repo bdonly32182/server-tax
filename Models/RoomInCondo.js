@@ -13,11 +13,22 @@ module.exports=(sequelize,DataTypes) => {
         },
         mark:{
             type:DataTypes.STRING(255),
+        },
+        AgeRoom:{
+            type:DataTypes.INTEGER
+        },
+        UsageRoom:{
+            type:DataTypes.BOOLEAN,
+            defaultValue:true
+        },
+        LiveStatus:{
+            type:DataTypes.BOOLEAN,
+            defaultValue:false
         }
     },{tableName:"room"})
     model.associate = models =>{
-        model.hasMany(models.Useful_room,{foreigkey:"room_id"})
-        model.belongsToMany(models.Customer,{through:models.OwnerRoom,foreignKey:"Condo_no"})
+        model.hasMany(models.Useful_room,{foreignKey:"room_id",onDelete:'CASCADE'})
+        // model.belongsToMany(models.Customer,{through:models.OwnerRoom,foreignKey:"Condo_no"})
         model.belongsTo(models.Condo,{foreignKey:"Condo_no"})
         model.belongsTo(models.Tax_Group,{foreignKey:"Room_Tax_ID"})
     }

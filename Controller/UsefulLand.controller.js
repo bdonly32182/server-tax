@@ -1,6 +1,5 @@
 const db = require('../Models')
 const Op = db.Sequelize.Op
-const {QueryTypes} = require('sequelize') 
 const { sequelize, Sequelize } = require('../Models')
 
 const createUsefulland = async(req,res) =>{

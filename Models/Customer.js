@@ -65,7 +65,7 @@ module.exports=(sequelize,DataTypes)=>{
         model.belongsTo(models.District,{foreignKey:'isDistrict_id'});
         model.hasMany(models.OwnerLand,{foreignKey:"Customer_own_id"})
         model.belongsToMany(models.Building,{through:models.OwnerBuilding,foreignKey:"Cus_No"});
-        model.belongsToMany(models.Room,{through:models.OwnerRoom,foreignKey:"Cus_No"})
+        // model.belongsToMany(models.Room,{through:models.OwnerRoom,foreignKey:"Cus_No"})
         model.belongsToMany(models.Tax_Group,{through:models.Customer_has_tax,foreignKey:"Cus_No"})
     }
     return model

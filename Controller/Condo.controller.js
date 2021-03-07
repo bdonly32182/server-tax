@@ -1,43 +1,67 @@
+const { Sequelize } = require('../Models')
 const db = require('../Models')
 const Op = db.Sequelize.Op
-const create_condo =async(req,res)=> {
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+const sequelize = db.sequelize
 
-        await db.Condo.create(req.body)
-        res.status(200).send()
+const {QueryTypes} = require('sequelize') 
+
+const create_condo =async(req,res)=> {
+    if (req.user.role === "leader" || req.user.role === "employee"){
+
+        await db.Condo.create({...req.body,distict_id:req.user.distict_id})
+       return res.status(200).send()
     }
-    res.status(401).send()
+   return res.status(401).send()
 }
 
 const edit_condo = async(req,res) =>{
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+    if (req.user.role === "leader" || req.user.role === "employee"){
 
-        await db.Condo.update(req.body,{where:{Register_no:req.params.con_id}})
-        res.status(202).send()
+        await db.Condo.update(req.body,{where:{id:req.params.con_id}})
+       return res.status(202).send()
     }
-    res.status(401).send()
+   return res.status(401).send()
 }
 const  fetchs_all_condo = async(req,res)=> {
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-        const condo = await db.Condo.findAll({where:{DistrictDistrictNo:req.user.DistrictDistrictNo}})
-        res.status(200).send(condo)
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        // const condo = await db.Condo.findAll({where:{distict_id:req.user.distict_id},include:[db.Room],
+        //         attributes:[[Sequelize.fn('count',Sequelize.col('Room_ID')),'amount']]
+        // })
+        const condo  = await sequelize.query(`select *,(select count(*)  from condo C inner join room R on C.id = R.Condo_no) as amount
+        from condo CD where  CD.distict_id ="${req.user.distict_id}"
+        `,{type:QueryTypes.SELECT})
+       return res.status(200).send(condo)
     }
-    res.status(401).send()
+   return res.status(401).send()
 }
 const fetch_condo = async(req,res) => {
-    //fetch condo first
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-        const condo = await db.Condo.findOne({where:{[Op.and]:[{DistrictDistrictNo:req.user.DistrictDistrictNo},{Register_no:req.params.con_id}]},include:{model:db.Room,where:{Floor:1}}})
-        res.status(200).send(condo)
+ 
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        const rooms = await db.Room.findAll({where:{[Op.and]:[{Condo_no:req.params.con_id},{Floor:1}]}});
+        if (rooms.length >0) {
+         const roomFloorOne = await db.Condo.findOne({where:{[Op.and]:[{distict_id:req.user.distict_id},{id:req.params.con_id}]},
+            include:{model:db.Room ,where:{Floor:1},
+                    include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]
+                    }
+            
+            })   
+         return  res.status(200).send(roomFloorOne)
+        }
+        const condo = await db.Condo.findOne({where:{[Op.and]:[{distict_id:req.user.distict_id},{id:req.params.con_id}]},
+            include:{model:db.Room ,include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]} 
+            })
+        return res.status(200).send(condo)
+        
+      
     }
-    res.status(401).send()
+  return  res.status(401).send()
 }
 const delete_condo = async(req,res) =>{
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-        await db.Condo.destroy({where:{Register_no:req.params.con_id}})
-        res.status(204).send()
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        await db.Condo.destroy({where:{id:req.params.con_id}})
+       return res.status(204).send()
     }
-    res.status(401).send()
+    return res.status(401).send()
 }
 
 module.exports={

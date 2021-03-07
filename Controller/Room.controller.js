@@ -1,27 +1,49 @@
 const db = require('../Models');
 const Op = db.Sequelize.Op
 const create_room = async(req,res)=>{
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-        const created=   await db.Room.findOne({where:{Room_ID:req.body.Room_ID}})
-        if(created) return res.status(400).send()
-        const Room  = await db.Room.create(req.body)
-        await db.Useful_room.bulkCreate(req.body.useful_room)
-       return res.status(200).send()
+    //test success
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        const {Useful_rooms,Room_ID} = req.body;
+        let mapRoomID = Useful_rooms.map(type=>({...type,room_id :Room_ID}));
+        const [room,created] = await db.Room.findOrCreate({where:{Room_ID:req.body.Room_ID},defaults:req.body});
+        if(created) {
+                await db.Useful_room.bulkCreate(mapRoomID);
+        }
+       return res.status(200).send();
     }
-    res.status(401).send()
-}
-const fetch_room = async(req,res)=> {
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
-
-        const room = await db.Room.findOne({where:{Room_ID:req.params.r_id},include:[db.Useful_room]})
-      return  res.status(200).send(room)
-    }
-    res.status(401).send()
+   return res.status(401).send();
 }
 
+const edit_room =async(req,res)=>{
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        const {Useful_rooms,Room_ID} = req.body;
+        await db.Room.update(req.body,{where:{Room_ID:Room_ID}});
+        for (const type of Useful_rooms) {
+            if (type.id) {
+                 await db.Useful_room.update(type,{where:{id:type.id}})
+            }else{
+                await db.Useful_room.create({...type,room_id:Room_ID})
+            }
+            
+            
+        }
+  
+        return res.status(200).send()
+    }
+    return res.status(403).send();
+}
+const onDelete_useful_room = async(req,res) => {
+    let targetID = req.params.uid
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        if(targetID ==='undefined') return res.status(203).send();
+        await db.Useful_room.destroy({where:{id:targetID}})
+        return res.status(200).send();
+    }
+    return res.status(403).send();
+}
 const filter_room = async(req,res) => {
     const {Floor,Condo_no,Price,Cus_No} = req.body
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+    if (req.user.role === "leader" || req.user.role === "employee"){
         //floor filter
         const room = await db.Room.findAll({where:{[Op.and]:[{Floor:Floor},{Condo_no:Condo_no}]},include:[{model:db.Useful_room,where:{Price:{[Op.eq]:Price}}},
                     {model:db.OwnerRoom,where:{Cus_No:{[Op.eq]:Cus_No}}}
@@ -32,15 +54,35 @@ const filter_room = async(req,res) => {
     res.status(401).send()
 }
 const delete_room = async(req,res) =>{
-    if (req.user.Role.Role_name === "leader" || req.user.Role.Role_name === "employee"){
+    //test success
+    if (req.user.role === "leader" || req.user.role === "employee"){
         await db.Room.destroy({where:{Room_ID:req.params.r_id}})
         return res.status(204).send()
     }
-    res.status(401).send()
+   return res.status(403).send()
+}
+
+//crud select  rows
+const onEdit_rows_useful = async(req,res) => {
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        await db.Useful_room.update(req.body,{where:{room_id:{[Op.in]:req.body.rooms}}})
+        return res.status(200).send()
+    }
+    return res.status(403).send();
+}
+const onDelete_rows = async(req,res) => {
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        await db.Room.destroy({where:{Room_ID:{[Op.in]:req.body.rooms}}});
+        res.status(204).send()
+    }
+    return res.status(403).send();
 }
 module.exports={
     delete_room,
     create_room,
-    fetch_room,
-    filter_room
+    filter_room,
+    edit_room,
+    onDelete_useful_room,
+    onEdit_rows_useful,
+    onDelete_rows
 }

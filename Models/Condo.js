@@ -3,10 +3,9 @@ module.exports=(sequelize,DataTypes) => {
     const model = sequelize.define('Condo',{
         Condo_name:{
             type:DataTypes.STRING(255),
-            primaryKey:true
         },
         Register_no:{
-            type:DataTypes.STRING(255)
+            type:DataTypes.STRING(255),
         },
         Parcel_no:{
             type:DataTypes.STRING(255),
@@ -29,12 +28,17 @@ module.exports=(sequelize,DataTypes) => {
         Country:{
             type:DataTypes.STRING(255),
         },
-        
+        District_name:{
+            type:DataTypes.STRING(255),
+        },
         Tambol:{
             type:DataTypes.STRING(255),
         },
         Post_no:{
             type:DataTypes.STRING(255),
+        },
+        AgeCondo:{
+            type:DataTypes.INTEGER
         },
         Mark:{
             type:DataTypes.STRING(255),
@@ -42,8 +46,8 @@ module.exports=(sequelize,DataTypes) => {
     },{tableName:"condo"})
 
     model.associate = models =>{
-        model.belongsTo(models.District,{ForeignKey:"distict_id"})
-        model.hasMany(models.Room,{foreignKey:"Condo_no"})
+        model.belongsTo(models.District,{foreignKey:"distict_id"})
+        model.hasMany(models.Room,{foreignKey:"Condo_no",onDelete:'CASCADE'})
     }
     return model
 }

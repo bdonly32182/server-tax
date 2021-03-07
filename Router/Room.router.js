@@ -1,11 +1,14 @@
 const db = require("../Models")
 const passport = require('passport')
 module.exports=app=>{
-    const auth = passport.authenticate("jwt",{session:false})
-    const room = require('../Controller/Room.controller')
+    const auth = passport.authenticate("jwt",{session:false});
+    const room = require('../Controller/Room.controller');
     app.route('/api/room/:r_id')
-        .get(auth,room.fetch_room)
-        .delete(auth,room.delete_room)
-    app.post('/api/create/room',auth,room.create_room)
-    app.post('/api/rooms',auth,room.filter_room)
+        .delete(auth,room.delete_room);
+    app.post('/api/edit/room',auth,room.edit_room);
+    app.post('/api/create/room',auth,room.create_room);
+    app.post('/api/rooms',auth,room.filter_room);
+    app.delete('/api/delete/usefulroom/:uid',auth,room.onDelete_useful_room);
+    app.post('/api/rows/usefuls/',auth,room.onEdit_rows_useful);
+    app.post('/api/rows/rooms',auth,room.onDelete_rows);
 }

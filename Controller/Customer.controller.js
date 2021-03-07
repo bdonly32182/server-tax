@@ -41,11 +41,11 @@ const fetchAll = async(req,res) =>{
     if(req.user.role === "leader" || req.user.role === "employee") {
         const customers = await db.Customer.findAndCountAll({where:{isDistrict_id:req.user.distict_id},
         // offset: 1,
-        limit: 3
+        // limit: 3
     })
-        res.status(200).send(customers)
+       return res.status(200).send(customers)
     }
-    res.status(403).send()
+  return  res.status(403).send()
 }
 const SearchName = async(req,res)=>{
     console.log(req.body);

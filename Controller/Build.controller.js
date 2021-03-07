@@ -113,7 +113,53 @@ const build_across_land =async(req,res)=>{
     }
     return res.status(403).send()
 }
-
+const fetchs_building = async(req,res) =>{
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        let buildings = await db.Building.findAll({where:{Build_in_district:req.user.distict_id},include:[
+            db.LiveType, db.FarmType,db.EmptyType,db.OtherType,
+                                    db.RateOfBuilding, 
+                                    {
+                                        // ผู้เสียภาษี
+                                        model:db.Tax_Group,
+                                        include:[db.Customer]
+                                    },
+                                    {//คร่อมแปลง เพื่อเอาไปเซ็ทรหัสการใช้ประโยชน์
+                                        model:db.BuildOnUsefulLand,
+                                        include:[db.UsefulLand]
+                                    }
+        ]})
+        return res.status(200).send(buildings)
+    }
+    return res.status(403).send()
+}
+const fetch_building = async(req,res) => {
+  
+    let targetID = req.params.bid
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        let building = await db.Building.findOne({where:{Build_Id:targetID},include:[
+                                    db.LiveType, db.FarmType,db.EmptyType,db.OtherType,
+                                    db.RateOfBuilding, 
+                                    {
+                                        // ผู้เสียภาษี
+                                        model:db.Tax_Group,
+                                        include:[db.Customer]
+                                    },
+                                    {//คร่อมแปลง เพื่อเอาไปเซ็ทรหัสการใช้ประโยชน์
+                                        model:db.BuildOnUsefulLand,
+                                        include:[db.UsefulLand]
+                                    }
+        ]}) 
+        return res.status(200).send(building)
+    }
+    return res.status(403).send()
+}
+const rate_building = async(req,res) => {
+    if (req.user.role === "leader" || req.user.role === "employee"){
+        let rate  = await db.RateOfBuilding.findAll()
+        return res.status(200).send(rate)
+    }
+    return res.status(403).send();
+}
 const BuildById = async(req,res,next,b_id) =>{
     const build = await db.Building.findOne({where:{Build_Id:b_id}});
     req.building = build;
@@ -126,5 +172,8 @@ module.exports = {
     createBuild,
     updateBuild,
     deleteBuild,
-    build_across_land
+    build_across_land,
+    fetch_building,
+    fetchs_building,
+    rate_building
 }
