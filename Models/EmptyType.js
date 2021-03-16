@@ -11,6 +11,14 @@ module.exports=(sequelize,DataTypes)=>{
         Percent_Empty:{
             type:DataTypes.DOUBLE
             
+        },
+        EmptyAbsolute:{
+            type:DataTypes.BOOLEAN,
+            defaultValue:false
+        },
+        StartYear:{
+            type:DataTypes.INTEGER,
+            defaultValue:0
         }
     },{
         tableName:"empty_type"

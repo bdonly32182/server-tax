@@ -1,8 +1,8 @@
 const db  = require('../Models');
-const Op = db.Sequelize.Op
 const { sequelize } = require('../Models')
 const {QueryTypes} = require('sequelize') 
-
+const redis = require('redis');
+const redisClient = redis.createClient();
 const createBuild = async(req,res) => {
     const {Build_Id,Build_Total_Place,rating_id,usefulTypeAll,useful_id} = req.body
     if (req.user.role === "leader" || req.user.role === "employee") {
@@ -15,6 +15,7 @@ const createBuild = async(req,res) => {
                     
                 }});
             if (created) {
+                redisClient.DEL(req.body.Build_Tax_ID)
                 await db.BuildOnUsefulLand.create({
                     Build_id_in_Useful:building.Build_Id,
                     Useful_land_id:useful_id
@@ -55,26 +56,40 @@ const updateBuild = async(req,res) => {
             await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'แก้ไขสิ่งปลูกสร้าง',Category:8})
             for (const useful of usefulTypeAll) {
                 if (useful.Farm_Size) {
+                    useful.id === undefined ?
+                    await db.FarmType.create(useful)
+                    :
                     await db.FarmType.update(useful,{where:{id:useful.id}})
                 }
                 if (useful.Live_Size) {
+                    useful.id === undefined ?
+                    await db.LiveType.create(useful)
+                    :
                     await db.LiveType.update(useful,{where:{id:useful.id}})
                 }
                 if (useful.Other_Size) {
+                    useful.id === undefined ?
+                    await db.OtherType.create(useful)
+                    :
                     await db.OtherType.update(useful,{where:{id:useful.id}})
                 }
                 if (useful.Empty_Size) {
+                    useful.id === undefined ?
+                    await db.EmptyType.create(useful)
+                    :
                     await db.EmptyType.update(useful,{where:{id:useful.id}})
                 }
             }
+            redisClient.DEL(req.building.Build_Tax_ID)
         return res.status(202).send({msg:`has been update building success`});
-
+        
     }
    return res.status(401).send()
 }
 const deleteBuild = async(req,res) => {
     if (req.user.role=== "leader" || req.user.role === "employee"){
         let target = req.params.b_id;
+        redisClient.DEL(req.building.Build_Tax_ID)
         await db.BuildOnUsefulLand.destroy({where:{Build_id_in_Useful:target}})
        await req.building.destroy();
        await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'ลบสิ่งปลูกสร้าง',Category:9});
@@ -84,12 +99,16 @@ const deleteBuild = async(req,res) => {
 }
 const build_across_land =async(req,res)=>{
     if (req.user.role === "leader" || req.user.role === "employee"){
-        const {obj_useful,ArrType} = req.body
+        const {obj_useful,ArrType,PriceUseful,buildings,buildTax,UsefulLand_Tax_ID,building} = req.body
+        redisClient.DEL(buildTax)
      let land = await   sequelize.query(`select sum(U.Place) as usefulTotalPlace,L.totalPlace from land L left join usefulLand U on L.code_land = U.Land_id 
         where L.code_land ="${obj_useful.Land_id}"`,{type:QueryTypes.SELECT});
         let balancePlace = land[0].totalPlace - land[0].usefulTotalPlace; //พื้นที่ที่เหลือให้ใช้งาน
-        console.log(req.body);
-
+        // console.log(req.body.obj_useful.UsefulLand_Tax_ID);//ไอดีแลนคร่อม
+        // console.log(buildTax);//ไอดีสิ่งปลูกสร้าง
+        // console.log(UsefulLand_Tax_ID); //ไอดีแท็กของที่ดินที่สิ่งปลูกสร้างอยู่
+        let totalPlace = buildings.map(({Building:{Width,Length}})=>Width*Length).reduce((pre,cur)=>pre+cur,0);
+        console.log(obj_useful.Place);
         if (obj_useful.Place <= balancePlace) { //เช็คก่อนว่าพื้นที่เหลือให้สร้างมั้ย
          let new_useful =   await db.UsefulLand.create({...obj_useful,isAccross:true})
             for (const useful of ArrType) {
@@ -97,7 +116,24 @@ const build_across_land =async(req,res)=>{
                     await db.Useful_farm.create({Farm_ID:useful.id,Useful_farm_ID:new_useful.useful_id});
                 }
                 if (useful.Live_Size) {
-                    await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id});
+                    buildTax ===UsefulLand_Tax_ID?
+                    //case 50 million
+                        buildTax ===obj_useful.UsefulLand_Tax_ID?
+                        //  get Gift
+                       await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id
+                        ,BalanceDiscount:50000000-( useful.Percent_Live * (((building.Width * building.Length)/totalPlace)*PriceUseful + building.AfterPriceDepreciate) /100)})
+                        :
+                        await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id})
+                        // not Gift for you
+                    :
+                    //case 10 million
+                        buildTax ===obj_useful.UsefulLand_Tax_ID?
+                        //  get Gift
+                        await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id
+                        ,BalanceDiscount:10000000-( useful.Percent_Live * (((building.Width * building.Length)/totalPlace)*PriceUseful + building.AfterPriceDepreciate) /100)})
+                        :
+                        await db.Useful_live.create({Live_ID:useful.id,Useful_live_ID:new_useful.useful_id})
+                        // not Gift for you
                 }
                 if (useful.Other_Size) {
                     await db.Useful_other.create({Other_ID:useful.id,Useful_other_ID:new_useful.useful_id});

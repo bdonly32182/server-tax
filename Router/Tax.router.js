@@ -12,5 +12,5 @@ module.exports=app=>{
     app.post('/api/exceptEmegency',auth,tax.exceptEmegency);
     app.post('/api/generate/room',auth,tax.room_generate_tax);
     app.get('/api/pds4/:id_tax',auth,tax.fetch_pds4_byIdTax);
-
+    app.get('/api/pds8/:id_tax',auth,tax.fetch_pds8_byIdTax);
 }

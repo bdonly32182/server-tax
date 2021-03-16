@@ -2,7 +2,10 @@ const db = require("../Models")
 const Op = db.Sequelize.Op
 const sequelize = db.sequelize
 const {QueryTypes} = require('sequelize') 
-const { Sequelize } = require("../Models")
+const redis = require('redis');
+const {promisify} = require('util')
+const redisClient = redis.createClient();
+const asyncGet = promisify(redisClient.get).bind(redisClient);
 const exceptEmegency=async(req,res)=>{
   let {exceptEmegency} =req.body
   if (req.user.role === "leader" || req.user.role=== "employee"){
@@ -127,7 +130,11 @@ const fetch_pds3_byIdTax = async(req,res) =>{
 const fetch_pds7_byIdTax = async(req,res)=> {
   const Tax_ID = req.params.id_tax;
   if (req.user.role === "leader" || req.user.role === "employee"){
-    let newPDS7 = [];
+    // let newPDS7 = [];
+    const reply = await asyncGet(Tax_ID);
+    if (reply) {
+      return res.status(200).send(JSON.parse(reply))
+    }
     let pds7 = await db.UsefulLand.findAll({where:{[Op.or]:[{UsefulLand_Tax_ID:Tax_ID},{"$BuildOnUsefulLands.Building.Build_Tax_ID$":Tax_ID}]},
     include:[
       {
@@ -178,22 +185,24 @@ const fetch_pds7_byIdTax = async(req,res)=> {
       }
     ],
     attributes:['useful_id','Useful_RAI','Useful_GNAN','Useful_WA','PriceUseful','Place',
-    'TypeName','UsefulLand_Tax_ID','Percent','Special_Useful','isNexto','marks']
+    'TypeName','UsefulLand_Tax_ID','Percent','Special_Useful','isNexto','marks','StartYears','EmptyAbsolutes']
     
   });
-  for (let useful of pds7) {
-    let total = useful.BuildOnUsefulLands.reduce((pre,{Building:{AfterPriceDepreciate}}) =>pre+AfterPriceDepreciate,0);
-     // useful.totalPriceBuild = total;
-     if (useful.UsefulLand_Tax_ID === Tax_ID) {
-       let newUseful = {useful,PriceBuildAnduseful:useful.PriceUseful +total}
-        newPDS7.push(newUseful)
-     }else{
-      let newUseful = {useful,PriceBuildAnduseful:total}
-      newPDS7.push(newUseful)
-     }
+//   for (let useful of pds7) { // old pattern pds7
+//     let total = useful.BuildOnUsefulLands.reduce((pre,{Building:{AfterPriceDepreciate}}) =>pre+AfterPriceDepreciate,0);
+//      // useful.totalPriceBuild = total;
+//      if (useful.UsefulLand_Tax_ID === Tax_ID) {
+//        let newUseful = {useful,PriceBuildAnduseful:useful.PriceUseful +total}
+//         newPDS7.push(newUseful)
+//      }else{
+//       let newUseful = {useful,PriceBuildAnduseful:total}
+//       newPDS7.push(newUseful)
+//      }
      
- }
-     return res.status(200).send(newPDS7);
+//  }
+//  return res.status(200).send(newPDS7);
+      redisClient.setex(Tax_ID,30000,JSON.stringify(pds7))
+     return res.status(200).send(pds7);
   }
  return res.status(401).send();
 }
@@ -214,6 +223,19 @@ const fetch_pds4_byIdTax = async(req,res)=>{
   return res.status(403).send();
 }
 
+const fetch_pds8_byIdTax = async(req,res) => {
+  if (req.user.role === "leader" || req.user.role === "employee") {
+    let targetId = req.params.id_tax
+    const usefultype = await db.Useful_room.findAll({include:{
+      model:db.Room,
+      where:{Room_Tax_ID:targetId},
+      include:[db.Condo]
+
+    }});
+    return res.status(200).send(usefultype);
+  }
+  return res.status(403).send();
+}
 module.exports={
     generate_tax,
     build_generate_tax,
@@ -223,5 +245,6 @@ module.exports={
     fetch_pds7_byIdTax,
     exceptEmegency,
     room_generate_tax,
-    fetch_pds4_byIdTax
+    fetch_pds4_byIdTax,
+    fetch_pds8_byIdTax
   }

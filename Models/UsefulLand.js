@@ -50,6 +50,14 @@ module.exports=(sequelize,DataTypes)=>{
             //ถ้าเป็น ทรู ไม่ต้องออกค่าภาษีคงเหลือ ให้ไปรวมกับแปลงที่ติดกัน
             type:DataTypes.BOOLEAN,
             defaultValue:false
+        },
+        EmptyAbsolutes:{
+            type:DataTypes.BOOLEAN,
+            defaultValue:false
+        },
+        StartYears:{
+            type:DataTypes.INTEGER,
+            defaultValue:0
         }
         
     },{

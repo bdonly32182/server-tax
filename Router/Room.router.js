@@ -11,4 +11,5 @@ module.exports=app=>{
     app.delete('/api/delete/usefulroom/:uid',auth,room.onDelete_useful_room);
     app.post('/api/rows/usefuls/',auth,room.onEdit_rows_useful);
     app.post('/api/rows/rooms',auth,room.onDelete_rows);
+    app.get('/api/usefultype:condo_id',auth,room.fetchs_usefultyes);
 }

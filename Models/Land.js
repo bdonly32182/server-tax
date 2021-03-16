@@ -64,7 +64,7 @@ module.exports=(sequelize,DataTypes)=>{
         Rate_Price_land:{
             type:DataTypes.DOUBLE,
             set(value) {
-                this.setDataValue('Rate_Price_land',this.Price * this.totalPlace)
+                this.setDataValue('Rate_Price_land',(this.Price * this.totalPlace).toFixed(2))
             }
         }
        

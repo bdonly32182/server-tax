@@ -12,6 +12,10 @@ module.exports =(sequelize,DataTypes) => {
         },
         Amount_Place:{
             type:DataTypes.DOUBLE
+        },
+        StartYearEmpty:{
+            type:DataTypes.INTEGER,
+            defaultValue:0
         }
 
     },{

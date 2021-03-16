@@ -7,6 +7,21 @@ module.exports=(sequelize,DataTypes)=>{
         },
         District_name:{
             type:DataTypes.STRING(255)
+        },
+        Address_Tambol:{
+            type:DataTypes.STRING(255)
+        },
+        Address_District:{
+            type:DataTypes.STRING(255)
+        },
+        Address_Country:{
+            type:DataTypes.STRING(255)
+        },
+        Address_PostNo:{
+            type:DataTypes.STRING(255)
+        },
+        Tel:{
+            type:DataTypes.STRING(20)
         }
     },{
         tableName:"district",

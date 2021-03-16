@@ -61,6 +61,18 @@ const delete_room = async(req,res) =>{
     }
    return res.status(403).send()
 }
+const fetchs_usefultyes = async(req,res)=> {
+    if (req.user.role === "leader" || req.user.role === "employee") {
+        let targetCondo = req.params.condo_id;
+        let usefultype = await db.Useful_room.findAll({include:{
+            model:db.Room,
+            where:{Condo_no:targetCondo}
+        }});
+        return res.status(200).send(usefultype)
+
+    }
+    return res.status(403).send();
+}
 
 //crud select  rows
 const onEdit_rows_useful = async(req,res) => {
@@ -84,5 +96,6 @@ module.exports={
     edit_room,
     onDelete_useful_room,
     onEdit_rows_useful,
-    onDelete_rows
+    onDelete_rows,
+    fetchs_usefultyes
 }
