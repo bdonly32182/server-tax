@@ -5,7 +5,7 @@ module.exports=(sequelize,DataTypes)=>{
             primaryKey:true,
         },
         Cus_No:{
-            type:DataTypes.STRING(13),
+            type:DataTypes.STRING(20),
 
         },
         title:{

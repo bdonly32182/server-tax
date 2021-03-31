@@ -78,14 +78,16 @@ module.exports=(sequelize,DataTypes)=>{
     }
     );
     model.associate = models =>{
-        model.belongsTo(models.RateOfBuilding,{foreignKey:"rating_id"})
-        model.hasOne(models.LiveType,{foreignKey:"Build_live_ID",onDelete:'CASCADE'})
-        model.hasOne(models.FarmType,{foreignKey:"Build_farm_ID",onDelete:'CASCADE'})
-        model.hasOne(models.EmptyType,{foreignKey:"Build_empty_ID",onDelete:'CASCADE'})
-        model.hasOne(models.OtherType,{foreignKey:"Build_other_ID",onDelete:'CASCADE'})
-        model.hasMany(models.BuildOnUsefulLand,{foreignKey:"Build_id_in_Useful"})
-        model.belongsTo(models.Tax_Group,{foreignKey:"Build_Tax_ID"})
-        model.belongsTo(models.District,{foreignKey:'Build_in_district'})
+        model.belongsTo(models.RateOfBuilding,{foreignKey:"rating_id"});
+        model.hasOne(models.LiveType,{foreignKey:"Build_live_ID",onDelete:'CASCADE'});
+        model.hasOne(models.FarmType,{foreignKey:"Build_farm_ID",onDelete:'CASCADE'});
+        model.hasOne(models.EmptyType,{foreignKey:"Build_empty_ID",onDelete:'CASCADE'});
+        model.hasOne(models.OtherType,{foreignKey:"Build_other_ID",onDelete:'CASCADE'});
+        model.hasMany(models.BuildOnUsefulLand,{foreignKey:"Build_id_in_Useful"});
+        model.belongsTo(models.Tax_Group,{foreignKey:"Build_Tax_ID"});
+        model.belongsTo(models.District,{foreignKey:'Build_in_district'});
+        model.belongsTo(models.Employee,{foreignKey:'employee_build'});
+
     }
     return model
 }

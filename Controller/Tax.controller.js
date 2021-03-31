@@ -2,10 +2,10 @@ const db = require("../Models")
 const Op = db.Sequelize.Op
 const sequelize = db.sequelize
 const {QueryTypes} = require('sequelize') 
-const redis = require('redis');
-const {promisify} = require('util')
-const redisClient = redis.createClient();
-const asyncGet = promisify(redisClient.get).bind(redisClient);
+// const redis = require('redis');
+// const {promisify} = require('util')
+// const redisClient = redis.createClient();
+// const asyncGet = promisify(redisClient.get).bind(redisClient);
 const exceptEmegency=async(req,res)=>{
   let {exceptEmegency} =req.body
   if (req.user.role === "leader" || req.user.role=== "employee"){
@@ -15,36 +15,97 @@ const exceptEmegency=async(req,res)=>{
   }
  return res.status(401).send()
 }
+
 const generate_tax = async(req,res) => {
     const {uid_tax,land_id,customer_has_tax,customer,Category_Tax} = req.body
+   
     if (req.user.role === "leader" || req.user.role=== "employee"){
-        const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
-          await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}});
-          await db.Land.update({Land_Tax_ID:tax.uid_tax},{where:{code_land:land_id}});
+      //tax owner one
+      if (uid_tax && customer_has_tax) {           
+            await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}});
+            await db.Land.update({Land_Tax_ID:uid_tax},{where:{code_land:land_id}});
+          Category_Tax !=="รัฐบาล"&&await db.UsefulLand.update({UsefulLand_Tax_ID:uid_tax},{where:{Land_id:land_id}});
+          return res.status(200).send()
+      }
+      
+       let CustomerIn = customer.map(customer=>customer.id_customer)
+       let isTax = await db.Tax_Group.findAll({include:[{
+                    model:db.Customer,
+                    where:{id_customer:{[Op.in]:CustomerIn}},  
+                  }],
+                  group:["uid_tax"],
+                  having: sequelize.where(sequelize.fn('count', sequelize.col('uid_tax')),CustomerIn.length)
+                });
+     //have uid_tax
+     if (isTax.length>0) {
+          await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:isTax[0].uid_tax}});
+          await db.Land.update({Land_Tax_ID:isTax[0].uid_tax},{where:{code_land:land_id}});
 
-         Category_Tax !=="รัฐบาล"&&await db.UsefulLand.update({UsefulLand_Tax_ID:tax.uid_tax},{where:{Land_id:land_id}});
-        // create true === uid_tax นี้ยังไม่มีในระบบ
-        if(created) { 
-          await db.Customer_has_tax.bulkCreate(customer_has_tax)
-          await db.Address.create({...customer,Address_Tax_ID:tax.uid_tax})
-        }
+          Category_Tax !=="รัฐบาล"&&await db.UsefulLand.update({UsefulLand_Tax_ID:isTax[0].uid_tax},{where:{Land_id:land_id}});      
+       return res.status(200).send();
+     }
+     //don't have uid_tax
+          let {count,row} = await db.Tax_Group.findAndCountAll({where:{Tax_in_district:req.user.distict_id}});
+          let totalTax = `${count+1}`
+          let sumZero = "";
+          for (let index = 0; index <= 13 - totalTax.length - customer.length; index++) {
+              sumZero += "0"
+          }
+          let Tax_ID = `${req.user.distict_id}_${customer.length}${sumZero}${count+1}` 
+
+          await db.Tax_Group.create({uid_tax:Tax_ID,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax});
+          await db.Land.update({Land_Tax_ID:Tax_ID},{where:{code_land:land_id}});
+          for (const values of customer) {
+            await db.Customer_has_tax.create({Cus_No:values.id_customer,Customer_Tax_ID:Tax_ID})
+          }
+          await db.Address.create({...customer[0],Address_Tax_ID:Tax_ID})
        return res.status(200).send()
     }
    return res.status(401).send()
 }
 const build_generate_tax = async(req,res) => {
+
   const {uid_tax,land_id,customer_has_tax,customer,Category_Tax,Build_Id} = req.body
   if (req.user.role === "leader" || req.user.role === "employee"){
-    console.log(req.body);
-    const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
-    await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}})
-    await db.Building.update({Build_Tax_ID:tax.uid_tax},{where:{Build_Id:Build_Id}})
-  // create true === uid_tax นี้ยังไม่มีในระบบ
-      if(created) { 
-        await db.Customer_has_tax.bulkCreate(customer_has_tax)
-        await db.Address.create({...customer,Address_Tax_ID:uid_tax})
+    if (uid_tax && customer_has_tax) {          
+            await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}});
+            await db.Building.update({Build_Tax_ID:uid_tax},{where:{Build_Id:Build_Id}})
+           
+          return res.status(200).send()
       }
-      return res.status(200).send()     
+      
+       let CustomerIn = customer.map(customer=>customer.id_customer)
+       let isTax = await db.Tax_Group.findAll({include:[{
+                    model:db.Customer,
+                    where:{id_customer:{[Op.in]:CustomerIn}},  
+                  }],
+                  group:["uid_tax"],
+                  having: sequelize.where(sequelize.fn('count', sequelize.col('uid_tax')),CustomerIn.length)
+                });
+     //have uid_tax owner join
+     if (isTax.length>0) {
+  
+          await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:isTax[0].uid_tax}});
+          await db.Building.update({Build_Tax_ID:isTax[0].uid_tax},{where:{Build_Id:Build_Id}})
+         return res.status(200).send();
+     }
+     //don't have uid_tax owner join
+          let {count,row} = await db.Tax_Group.findAndCountAll({where:{Tax_in_district:req.user.distict_id}});
+          let totalTax = `${count+1}`
+          let sumZero = "";
+          for (let index = 0; index <= 13 - totalTax.length - customer.length; index++) {
+              sumZero += "0"
+          }
+          let Tax_ID = `${req.user.distict_id}_${customer.length}${sumZero}${count+1}` 
+
+          await db.Tax_Group.create({uid_tax:Tax_ID,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax});
+          await db.Building.update({Build_Tax_ID:Tax_ID},{where:{Build_Id:Build_Id}})
+          for (const values of customer) {
+            await db.Customer_has_tax.create({Cus_No:values.id_customer,Customer_Tax_ID:Tax_ID})
+          }
+          await db.Address.create({...customer[0],Address_Tax_ID:Tax_ID})
+       return res.status(200).send()
+   
   }
   return res.status(401).send()
 
@@ -127,14 +188,29 @@ const fetch_pds3_byIdTax = async(req,res) =>{
   
  return res.status(403).send();
 } 
+const fetch_pds6_byIdTax = async(req,res)=>{
+  const Tax_ID = req.params.id_tax;
+  if (req.user.role  === "leader" || req.user.role=== "employee") {
+      let leader = await db.Employee.findOne({where:{[Op.and]:[{distict_id:req.user.distict_id},{role:"leader"}]}});
+      let Land = await sequelize.query(`
+                    select count(L.code_land) as totalLand from land L left join usefulLand UL on L.code_land = UL.Land_id
+                    where UL.UsefulLand_Tax_ID = "${Tax_ID}"
+                    group by UL.useful_id
+                    having count(UL.useful_id) >= 1
+                    
+      `,{type:QueryTypes.SELECT});
+      let Building = await sequelize.query(`
+              select count(Build_Id)as totalBuild from building where Build_Tax_ID ="${Tax_ID}"
+      `,{type:QueryTypes.SELECT})
+      return res.status(200).send({leader,Land,Building})
+  }
+  return res.status(403).send();
+}
 const fetch_pds7_byIdTax = async(req,res)=> {
   const Tax_ID = req.params.id_tax;
   if (req.user.role === "leader" || req.user.role === "employee"){
     // let newPDS7 = [];
-    const reply = await asyncGet(Tax_ID);
-    if (reply) {
-      return res.status(200).send(JSON.parse(reply))
-    }
+    
     let pds7 = await db.UsefulLand.findAll({where:{[Op.or]:[{UsefulLand_Tax_ID:Tax_ID},{"$BuildOnUsefulLands.Building.Build_Tax_ID$":Tax_ID}]},
     include:[
       {
@@ -188,20 +264,7 @@ const fetch_pds7_byIdTax = async(req,res)=> {
     'TypeName','UsefulLand_Tax_ID','Percent','Special_Useful','isNexto','marks','StartYears','EmptyAbsolutes']
     
   });
-//   for (let useful of pds7) { // old pattern pds7
-//     let total = useful.BuildOnUsefulLands.reduce((pre,{Building:{AfterPriceDepreciate}}) =>pre+AfterPriceDepreciate,0);
-//      // useful.totalPriceBuild = total;
-//      if (useful.UsefulLand_Tax_ID === Tax_ID) {
-//        let newUseful = {useful,PriceBuildAnduseful:useful.PriceUseful +total}
-//         newPDS7.push(newUseful)
-//      }else{
-//       let newUseful = {useful,PriceBuildAnduseful:total}
-//       newPDS7.push(newUseful)
-//      }
-     
-//  }
-//  return res.status(200).send(newPDS7);
-      redisClient.setex(Tax_ID,30000,JSON.stringify(pds7))
+
      return res.status(200).send(pds7);
   }
  return res.status(401).send();
@@ -236,6 +299,24 @@ const fetch_pds8_byIdTax = async(req,res) => {
   }
   return res.status(403).send();
 }
+const testGenerateTax = async(req,res)=>{
+ 
+ let arrCustomer = ["36_1100800080901","36_1101500135931"]
+  // let customer = await sequelize.query(`select  TG.uid_tax,C.id_customer from customer_has_tax CHT  join tax_group TG on TG.uid_tax = CHT.Customer_Tax_ID  join customer C on C.id_customer = CHT.Cus_No
+  // where C.id_customer in (${arrCustomer})
+  // group by TG.uid_tax
+  // having count(TG.uid_tax) =${arrCustomer.length}`,
+  // {type:QueryTypes.SELECT})
+
+    let test = await db.Tax_Group.findAll({include:[{
+      model:db.Customer,
+      where:{id_customer:{[Op.in]:arrCustomer}},  
+    }],
+    group:["uid_tax"],
+    having: sequelize.where(sequelize.fn('count', sequelize.col('uid_tax')),arrCustomer.length)
+  });
+  res.send(test);
+}
 module.exports={
     generate_tax,
     build_generate_tax,
@@ -246,5 +327,7 @@ module.exports={
     exceptEmegency,
     room_generate_tax,
     fetch_pds4_byIdTax,
-    fetch_pds8_byIdTax
+    fetch_pds8_byIdTax,
+    testGenerateTax,
+    fetch_pds6_byIdTax
   }

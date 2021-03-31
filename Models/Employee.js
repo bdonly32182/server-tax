@@ -5,6 +5,9 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(13),
             primaryKey:true
         },
+        TitleEmp:{
+            type:DataTypes.STRING(30)
+        },
         Fname:{
             type:DataTypes.STRING(255)
         },
@@ -14,9 +17,12 @@ module.exports=(sequelize,DataTypes)=>{
         role:{
             type:DataTypes.STRING(100)
         },
-        pictur:{
+        picture:{
             type:DataTypes.STRING(255),
-            defaultValue:"no picture"
+            defaultValue:null
+        },
+        TableNo:{
+            type:DataTypes.STRING(10)
         }
     },{
         tableName:"employee"
@@ -25,7 +31,8 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasOne(models.Employee_Login,{foreignKey:"employee_no"})
         model.belongsTo(models.District,{foreignKey:"distict_id"})
         model.hasMany(models.Working,{foreignKey:'Emp_ID'})
-
+        model.hasMany(models.Land,{foreignKey:'employee_land'});
+        model.hasMany(models.Building,{foreignKey:'employee_build'})
     }
     return model
 

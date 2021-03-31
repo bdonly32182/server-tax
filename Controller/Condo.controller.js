@@ -24,12 +24,12 @@ const edit_condo = async(req,res) =>{
 }
 const  fetchs_all_condo = async(req,res)=> {
     if (req.user.role === "leader" || req.user.role === "employee"){
-        // const condo = await db.Condo.findAll({where:{distict_id:req.user.distict_id},include:[db.Room],
-        //         attributes:[[Sequelize.fn('count',Sequelize.col('Room_ID')),'amount']]
-        // })
-        const condo  = await sequelize.query(`select *,(select count(*)  from condo C inner join room R on C.id = R.Condo_no) as amount
-        from condo CD where  CD.distict_id ="${req.user.distict_id}"
-        `,{type:QueryTypes.SELECT})
+        const condo = await db.Condo.findAll({where:{distict_id:req.user.distict_id},include:[db.Room],
+                attributes:['id','Register_no','Condo_name','Parcel_no','Survey_no','Tambol','District_name',[Sequelize.fn('count',Sequelize.col('Room_no')),'amount']],
+                group:['id'],
+                raw:true
+        })
+       
        return res.status(200).send(condo)
     }
    return res.status(401).send()

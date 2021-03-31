@@ -1,8 +1,8 @@
 const db  = require('../Models');
 const { sequelize } = require('../Models')
 const {QueryTypes} = require('sequelize') 
-const redis = require('redis');
-const redisClient = redis.createClient();
+// const redis = require('redis');
+// const redisClient = redis.createClient();
 const createBuild = async(req,res) => {
     const {Build_Id,Build_Total_Place,rating_id,usefulTypeAll,useful_id} = req.body
     if (req.user.role === "leader" || req.user.role === "employee") {
@@ -15,7 +15,7 @@ const createBuild = async(req,res) => {
                     
                 }});
             if (created) {
-                redisClient.DEL(req.body.Build_Tax_ID)
+                // redisClient.DEL(req.body.Build_Tax_ID)
                 await db.BuildOnUsefulLand.create({
                     Build_id_in_Useful:building.Build_Id,
                     Useful_land_id:useful_id
@@ -80,7 +80,7 @@ const updateBuild = async(req,res) => {
                     await db.EmptyType.update(useful,{where:{id:useful.id}})
                 }
             }
-            redisClient.DEL(req.building.Build_Tax_ID)
+            // redisClient.DEL(req.building.Build_Tax_ID)
         return res.status(202).send({msg:`has been update building success`});
         
     }
@@ -89,7 +89,7 @@ const updateBuild = async(req,res) => {
 const deleteBuild = async(req,res) => {
     if (req.user.role=== "leader" || req.user.role === "employee"){
         let target = req.params.b_id;
-        redisClient.DEL(req.building.Build_Tax_ID)
+        // redisClient.DEL(req.building.Build_Tax_ID)
         await db.BuildOnUsefulLand.destroy({where:{Build_id_in_Useful:target}})
        await req.building.destroy();
        await db.Working.create({Emp_ID:req.user.Pers_no,List_working:'ลบสิ่งปลูกสร้าง',Category:9});
@@ -100,7 +100,7 @@ const deleteBuild = async(req,res) => {
 const build_across_land =async(req,res)=>{
     if (req.user.role === "leader" || req.user.role === "employee"){
         const {obj_useful,ArrType,PriceUseful,buildings,buildTax,UsefulLand_Tax_ID,building} = req.body
-        redisClient.DEL(buildTax)
+        // redisClient.DEL(buildTax)
      let land = await   sequelize.query(`select sum(U.Place) as usefulTotalPlace,L.totalPlace from land L left join usefulLand U on L.code_land = U.Land_id 
         where L.code_land ="${obj_useful.Land_id}"`,{type:QueryTypes.SELECT});
         let balancePlace = land[0].totalPlace - land[0].usefulTotalPlace; //พื้นที่ที่เหลือให้ใช้งาน
@@ -190,7 +190,7 @@ const fetch_building = async(req,res) => {
     return res.status(403).send()
 }
 const rate_building = async(req,res) => {
-    if (req.user.role === "leader" || req.user.role === "employee"){
+    if (req.user.role === "leader" || req.user.role === "employee" ||req.user.role === "admin"){
         let rate  = await db.RateOfBuilding.findAll()
         return res.status(200).send(rate)
     }

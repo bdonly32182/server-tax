@@ -76,7 +76,9 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasMany(models.UsefulLand,{foreignKey:"Land_id",onDelete:'CASCADE'})
         model.hasMany(models.OwnerLand,{foreignKey:"Land_own_id"})
         model.belongsTo(models.Tax_Group,{foreignKey:"Land_Tax_ID"})
-        model.belongsTo(models.RateLand,{foreignKey:"rate_land_id"})
+        model.hasMany(models.RateLand,{foreignKey:"land_id"});
+        model.belongsTo(models.Employee,{foreignKey:'employee_land'})
+
     }
     return model
 

@@ -6,6 +6,10 @@ module.exports=(sequelize,DataTypes) => {
         },
         Register_no:{
             type:DataTypes.STRING(255),
+            // primaryKey:true
+        },
+        Build_Name:{
+            type:DataTypes.STRING(255),
         },
         Parcel_no:{
             type:DataTypes.STRING(255),

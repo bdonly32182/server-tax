@@ -4,6 +4,7 @@ const createCustomer = async(req,res)=>{
     const {category_Cus,Cus_No} =req.body;
     if (req.user.role === "leader" || req.user.role === "employee"){        
            //api นี้สำหรับการสร้างประชาชน และแท็กไอดีจะเป็นอันเดียวกับรหัสบัตรประชาชน
+           
            const checkCus = await db.Customer.findOne({where:{id_customer:`${req.user.distict_id}_${Cus_No}`}})
             if(checkCus)  return res.status(202).send({msg:'เจ้าของทรัพย์สินรายนี้ถูกสร้างเรียบร้อยแล้ว'})
             const customer = await db.Customer.create({...req.body,id_customer:`${req.user.distict_id}_${Cus_No}`,isDistrict_id:req.user.distict_id})

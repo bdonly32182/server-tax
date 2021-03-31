@@ -2,12 +2,12 @@ const express = require('express');
 const cors = require('cors');
 module.exports=()=>{
     const app = express();
-
-    require('../MiddlewareAuth/Passport')
+    global.__basedir = __dirname + "/..";
+    require('../Middleware/Passport')
     app.use(cors());
     app.use(express.urlencoded({extended:true}))
     app.use(express.json())
-
+    app.use(express.static('public'))
     require('../Router/MemberList.router')(app);
     require('../Router/Disctict.router')(app);
     require('../Router/Employee.router')(app);
@@ -26,5 +26,7 @@ module.exports=()=>{
     require('../Router/PDS7.router')(app);
     require('../Router/PDS8.router')(app);
     require('../Router/Type.router')(app);
+    require('../Router/File.router')(app);
+    require('../Router/Puppetteer.router')(app);
     return app;
 }

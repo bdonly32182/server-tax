@@ -1,7 +1,7 @@
 module.exports=(sequelize,DataTypes)=>{
     const model = sequelize.define("District",{
         District_no:{
-            type:DataTypes.INTEGER,
+            type:DataTypes.STRING(20),
             primaryKey:true
 
         },
@@ -22,6 +22,9 @@ module.exports=(sequelize,DataTypes)=>{
         },
         Tel:{
             type:DataTypes.STRING(20)
+        },
+        Abbreviations:{
+            type:DataTypes.STRING(20)
         }
     },{
         tableName:"district",
@@ -30,9 +33,7 @@ module.exports=(sequelize,DataTypes)=>{
     model.associate = models =>{
         model.hasMany(models.Employee,{foreignKey:"distict_id"})
         model.hasMany(models.Land,{foreignKey:"distict_id"})
-        // model.hasMany(models.Tambol,{ForeignKey:"distict_id"})
         model.hasMany(models.Customer,{foreignKey:'isDistrict_id'});
-
         model.hasMany(models.MemberList,{foreignKey:"distict_member_id"})
         model.hasMany(models.Condo,{foreignKey:"distict_id"})
         model.hasMany(models.Tax_Group,{foreignKey:"Tax_in_district"})

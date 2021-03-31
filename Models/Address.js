@@ -27,6 +27,9 @@ module.exports=(sequelize,DataTypes)=>{
         },
         Phone_no:{
             type:DataTypes.STRING(10)
+        },
+        ReceiveName:{
+            type:DataTypes.STRING(255)
         }
     },{
         tableName:"address"

@@ -4,7 +4,7 @@ exports.registMember=(async(req,res)=>{
     let {Pers_no} = req.body
     let employee = await db.Employee.findOne({where:{Pers_no:Pers_no}})
     if (employee===null ) {
-        let [newMember,created] = await db.MemberList.findOrCreate({where:{Pers_no:Pers_no},defaults:{...req.body}})
+        let [newMember,created] = await db.MemberList.findOrCreate({where:{Pers_no:Pers_no},defaults:{...req.body,picture:req.file?req.file.filename:null}})
             //ไม่มีสมาชิกในระบบ และ เมมเบอร์ลิส จึงสมัครได้
         if(created) return res.status(200).send({msg:"สมัครเรียบร้อยแล้ว กรุณารอการอนุมัติ"})
     }

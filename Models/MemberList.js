@@ -17,7 +17,10 @@ module.exports=(sequelize,DataTypes)=>{
         },
         picture:{
             type:DataTypes.STRING(255),
-            defaultValue:"no picture"
+            defaultValue:null
+        },
+        TableNo:{
+            type:DataTypes.STRING(10)
         }
     },{
         tableName:"memberlist"
