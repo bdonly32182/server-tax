@@ -20,12 +20,15 @@ module.exports=(sequelize,DataTypes) => {
     model.associate = models =>{
         model.belongsTo(models.District,{foreignKey:"Tax_in_district"})
         
-        model.belongsToMany(models.Customer,{through:models.Customer_has_tax,foreignKey:"Customer_Tax_ID"})
-        model.hasMany(models.Land,{foreignKey:"Land_Tax_ID"})
-        model.hasMany(models.Building,{foreignKey:"Build_Tax_ID"})
-        model.hasMany(models.Room,{foreignKey:"Room_Tax_ID"})
-        model.hasOne(models.Address,{foreignKey:"Address_Tax_ID"})
-        model.hasMany(models.UsefulLand,{foreignKey:'UsefulLand_Tax_ID'})
+        model.belongsToMany(models.Customer,{through:models.Customer_has_tax,foreignKey:"Customer_Tax_ID"});
+        model.hasMany(models.Land,{foreignKey:"Land_Tax_ID"});
+        model.hasMany(models.Building,{foreignKey:"Build_Tax_ID"});
+        model.hasMany(models.Room,{foreignKey:"Room_Tax_ID"});
+        model.hasOne(models.Address,{foreignKey:"Address_Tax_ID"});
+        model.hasMany(models.UsefulLand,{foreignKey:'UsefulLand_Tax_ID'});
+        model.hasMany(models.CheckBook,{foreignKey:'TaxCheckBook'});
+        model.hasMany(models.CostBook,{foreignKey:'TaxCostBook'});
+
     }
     return model
 }

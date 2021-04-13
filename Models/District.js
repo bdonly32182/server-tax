@@ -38,6 +38,8 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasMany(models.Condo,{foreignKey:"distict_id"})
         model.hasMany(models.Tax_Group,{foreignKey:"Tax_in_district"})
         model.hasMany(models.Building,{foreignKey:'Build_in_district'})
+        model.hasMany(models.CheckBook,{foreignKey:'districtNo'});
+        model.hasMany(models.CostBook,{foreignKey:'districtNo'});
 
     }
     return model

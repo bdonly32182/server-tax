@@ -50,8 +50,10 @@ module.exports=(sequelize,DataTypes) => {
     },{tableName:"condo"})
 
     model.associate = models =>{
-        model.belongsTo(models.District,{foreignKey:"distict_id"})
-        model.hasMany(models.Room,{foreignKey:"Condo_no",onDelete:'CASCADE'})
+        model.belongsTo(models.District,{foreignKey:"distict_id"});
+        model.hasMany(models.Room,{foreignKey:"Condo_no",onDelete:'CASCADE'});
+        model.belongsTo(models.Employee,{foreignKey:'employee_condo'});
+
     }
     return model
 }

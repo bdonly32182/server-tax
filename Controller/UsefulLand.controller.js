@@ -4,11 +4,11 @@ const { sequelize, Sequelize } = require('../Models')
 
 const createUsefulland = async(req,res) =>{
     if (req.user.role === "leader" || req.user.role === "employee"){
-
-      await  db.UsefulLand.create(req.body)
+     await  db.UsefulLand.create(req.body)
       return res.status(200).send({msg:"สร้างการใช้ประโยชน์เรียบร้อยแล้ว"})
+      
     }
-    res.status(402).send()
+   return res.status(402).send()
 }
 const updateUseful = async(req,res) => {
     if (req.user.role === "leader" || req.user.role === "employee"){

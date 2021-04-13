@@ -2,6 +2,9 @@ const db = require('../Models')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const config = require('../Config/config.json');
+const { sequelize } = require('../Models')
+const {QueryTypes} = require('sequelize') 
+
 const Op = db.Sequelize.Op
 const ConfirmMember = async(req,res)=>{
     if (req.user.role === "leader" ||req.user.role === 'admin'){
@@ -47,6 +50,7 @@ const Login = async(req,res) =>{
         else {
             jwt.sign(
                 {Pers_no:user.Pers_no,distict_id:user.distict_id,role:user.role,Fname:user.Fname,Lname:user.Lname,
+                    TableNo:user.TableNo,
                     picture:user.picture,Abbreviations:user.District.Abbreviations,District_name:user.District.District_name
                 },config["jwtSecret"],{expiresIn:'1days'},
             (err,token)=>{
@@ -98,10 +102,35 @@ const list_employee = async(req,res) => {
     }
     return res.status(403).send();
 }
+const NumberCostDocList = async(req,res) => {
+    if (req.user.role === "leader" ||req.user.role === "employee") {
+        let PersNo = req.params.PersNo
+        let numberRun = await sequelize.query(`
+        select count(*)as amountBook from cost_book where Employee_No = "${PersNo}"
+        `,{type:QueryTypes.SELECT});
+        // let numberPdfIsNull = await db.CostBook.findAll({where:{[Op.and]:[{Employee_No:PersNo},{PathPDF:{[Op.is]:null}},
+        //     {TaxOwnerBook:{[Op.is]:null}}]}});
+        return res.status(200).send({numberRun});
+    }
+    return res.status(403).send();
+}
+const NumberCheckDocList = async(req,res) => {
+    if (req.user.role === "leader" ||req.user.role === "employee") {
+        let PersNo = req.params.PersNo
+        let numberRun = await sequelize.query(`
+        select count(*)as amountBook from check_book where Employee_No = "${PersNo}"
+        `,{type:QueryTypes.SELECT});
+      
+        return res.status(200).send({numberRun});
+    }
+    return res.status(403).send();
 
+}
 module.exports ={
     ConfirmMember,
     Login,
     change_profile,
-    list_employee
+    list_employee,
+    NumberCostDocList,
+    NumberCheckDocList
 }

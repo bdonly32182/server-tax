@@ -51,10 +51,8 @@ const fetchAll = async(req,res) =>{
 const SearchName = async(req,res)=>{
     console.log(req.body);
     if(req.user.role === "leader" || req.user.role === "employee") {
-        const customer = await db.Customer.findAll({where:{id_customer:{[Op.notIn]:req.body.cusId}},
-                [Op.or]:[
-                {Cus_Fname:{[Op.like]:`${req.body.name}%`}},{Cus_Lname:{[Op.like]:`${req.body.name}%`}}
-            ]
+        const customer = await db.Customer.findAll({where:{[Op.and]:[{id_customer:{[Op.notIn]:req.body.cusId}},{Cus_Fname:{[Op.like]:`${req.body.name}%`}}]},
+                
         })
         if(customer === null) return res.status(400).send() 
        return res.status(200).send(customer)

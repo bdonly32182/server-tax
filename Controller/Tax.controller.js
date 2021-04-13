@@ -15,7 +15,13 @@ const exceptEmegency=async(req,res)=>{
   }
  return res.status(401).send()
 }
-
+const updateAddress =async(req,res)=>{
+  if (req.user.role === "leader" || req.user.role=== "employee"){
+    await  db.Address.update(req.body,{where:{Address_Tax_ID:req.body.Address_Tax_ID}});
+    return res.status(200).send();
+  }
+  return res.status(403).send();
+}
 const generate_tax = async(req,res) => {
     const {uid_tax,land_id,customer_has_tax,customer,Category_Tax} = req.body
    
@@ -113,10 +119,9 @@ const build_generate_tax = async(req,res) => {
 const room_generate_tax = async(req,res) => {
   const {uid_tax,customer_has_tax,customer,Category_Tax,Room_ID} = req.body
   if (req.user.role === "leader" || req.user.role === "employee"){
-    console.log(req.body);
     const [tax,created] = await db.Tax_Group.findOrCreate({defaults:{uid_tax:uid_tax,Tax_in_district:req.user.distict_id,Category_Tax:Category_Tax},where:{uid_tax:uid_tax}})
     await db.Tax_Group.update({Category_Tax:Category_Tax},{where:{uid_tax:uid_tax}})
-    await db.Room.update({Room_Tax_ID:tax.uid_tax},{where:{Room_ID:Room_ID}})
+    await db.Room.update({Room_Tax_ID:tax.uid_tax},{where:{id:Room_ID}})
       if(created) { 
         await db.Customer_has_tax.bulkCreate(customer_has_tax)
         await db.Address.create({...customer,Address_Tax_ID:uid_tax})
@@ -201,8 +206,12 @@ const fetch_pds6_byIdTax = async(req,res)=>{
       `,{type:QueryTypes.SELECT});
       let Building = await sequelize.query(`
               select count(Build_Id)as totalBuild from building where Build_Tax_ID ="${Tax_ID}"
+      `,{type:QueryTypes.SELECT});
+      let Room = await sequelize.query(`
+        select count(*) as totalRoom from room where Room_Tax_ID ="${Tax_ID}"
       `,{type:QueryTypes.SELECT})
-      return res.status(200).send({leader,Land,Building})
+      console.log(Room);
+      return res.status(200).send({leader,Land,Building,Room})
   }
   return res.status(403).send();
 }
@@ -300,22 +309,54 @@ const fetch_pds8_byIdTax = async(req,res) => {
   return res.status(403).send();
 }
 const testGenerateTax = async(req,res)=>{
- 
- let arrCustomer = ["36_1100800080901","36_1101500135931"]
+ //test tax having
   // let customer = await sequelize.query(`select  TG.uid_tax,C.id_customer from customer_has_tax CHT  join tax_group TG on TG.uid_tax = CHT.Customer_Tax_ID  join customer C on C.id_customer = CHT.Cus_No
   // where C.id_customer in (${arrCustomer})
   // group by TG.uid_tax
   // having count(TG.uid_tax) =${arrCustomer.length}`,
   // {type:QueryTypes.SELECT})
 
-    let test = await db.Tax_Group.findAll({include:[{
-      model:db.Customer,
-      where:{id_customer:{[Op.in]:arrCustomer}},  
+  //test condo min floor
+//  let  roomFloorOne = await sequelize.query(`select * from condo C left join room R on C.id = R.Condo_no
+//     where R.Floor in (select min(Floor) as minFloor from room where Condo_no = "37")
+   
+//  `,{type:QueryTypes.SELECT});
+//  const condo = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
+//   include:{model:db.Room ,
+//       where:{Floor:{[Op.in]:[sequelize.literal(`(select min(Floor) as minFloor from room where Condo_no = "37")`)]}}
+//     ,include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]} 
+//   })
+
+//test Seach Room in condo 
+let floor = req.query.floor
+let ratePriceQuery =  req.query.rate
+let roomFloor = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
+    include:{model:db.Room ,
+        where:{Floor:floor},include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]} 
+    })
+ //test ratePrice Room
+ let price = 0;
+ let hasTax = 0;//0 ===ไม่มีรหัสผู้เสียภาษี
+ let ratePrice = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
+  include:{model:db.Room 
+    ,include:[{model:db.Tax_Group,include:[db.Customer]},
+    {
+      model:db.Useful_room,
+      where:{Price_Room:{[Op.eq]:0}}
+    }]} 
+  })
+  //test floor 
+  //hastax >0 คือเลือกทั้งหมด
+  let groupFloor = await db.Room.findAll({where:{[Op.and]:[{Condo_no:37},{Floor:3},hasTax>0?hasTax===1?{Room_Tax_ID:{[Op.not]:null}}:{Room_Tax_ID:{[Op.is]:null}}:null]},
+    include:[{model:db.Tax_Group,include:[db.Customer]},
+    {
+      model:db.Useful_room,
+      where:{Price_Room:price===0?{[Op.eq]:price}:{[Op.gt]:price}}
     }],
-    group:["uid_tax"],
-    having: sequelize.where(sequelize.fn('count', sequelize.col('uid_tax')),arrCustomer.length)
-  });
-  res.send(test);
+    
+  } );
+  
+  res.send(groupFloor);
 }
 module.exports={
     generate_tax,
@@ -329,5 +370,6 @@ module.exports={
     fetch_pds4_byIdTax,
     fetch_pds8_byIdTax,
     testGenerateTax,
-    fetch_pds6_byIdTax
+    fetch_pds6_byIdTax,
+    updateAddress
   }

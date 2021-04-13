@@ -64,7 +64,7 @@ const editLand = async(req,res)=>{
             select UB.Build_id_in_Useful from build_on_useful_land UB where UB.Useful_land_id in(select U.useful_id from usefulLand U where U.Land_id ="${req.land.code_land}"))`);
         }
        
-      return  res.status(201).send({msg:"คุณแก้ไข้ข้อมูลที่ดินเรียบร้อยแล้ว"}) ;
+      return  res.status(200).send({msg:"คุณแก้ไข้ข้อมูลที่ดินเรียบร้อยแล้ว"}) ;
     }
    return res.status(401).send()
    
@@ -103,17 +103,22 @@ const search_filter_land = async(req,res)=>{
     let CodeLand = req.query.CodeLand;
     let TaxId = req.query.TaxId;
     let Operator = req.query.Operator
-    let special = req.query.special
-    if (!special) {
+    
         let land = await sequelize.query(`select * from land where code_land = "${CodeLand}" ${Operator} Parcel_No="${ParcelNo}" 
         ${Operator} Land_No="${LandNo}" ${Operator} Survey_No="${SurveyNo}" ${Operator} Land_Tax_ID="${TaxId}"`,{type:QueryTypes.SELECT});
       return res.status(200).send(land)
-    }
-    let specilQuery = await sequelize.query(`select * from land ${special}`,{type:QueryTypes.SELECT})
-    return res.status(200).send(specilQuery)
+    
     
   }
  return res.status(403).send();
+}
+const search_landSpecial =async(req,res)=>{
+  if (req.user.role === "leader" || req.user.role === "employee") {
+    let special = req.query.special
+    let specilQuery = await sequelize.query(`select * from land ${special}`,{type:QueryTypes.SELECT})
+    return res.status(200).send(specilQuery);
+  }
+  return res.status(403).send();
 }
 const LandById = async(req,res,next,id) =>{
   const fetchLand =   await db.Land.findOne({where:{code_land:id}}) 
@@ -128,5 +133,6 @@ module.exports ={
     deleteLand,
     fetch_land,
     search_parcel,
-    search_filter_land
+    search_filter_land,
+    search_landSpecial
 }

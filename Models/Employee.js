@@ -32,7 +32,11 @@ module.exports=(sequelize,DataTypes)=>{
         model.belongsTo(models.District,{foreignKey:"distict_id"})
         model.hasMany(models.Working,{foreignKey:'Emp_ID'})
         model.hasMany(models.Land,{foreignKey:'employee_land'});
-        model.hasMany(models.Building,{foreignKey:'employee_build'})
+        model.hasMany(models.Building,{foreignKey:'employee_build'});
+        model.hasMany(models.CheckBook,{foreignKey:'Employee_No'});
+        model.hasMany(models.CostBook,{foreignKey:'Employee_No'});
+        model.hasMany(models.Condo,{foreignKey:'employee_condo'})
+
     }
     return model
 

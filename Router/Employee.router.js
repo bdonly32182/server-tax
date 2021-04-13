@@ -6,4 +6,6 @@ module.exports=(app)=>{
     app.post('/api/login',emp.Login);
     app.post('/api/change',auth,emp.change_profile);
     app.get('/api/employee',auth,emp.list_employee);
+    app.get('/api/numberDoc/:PersNo',auth,emp.NumberCostDocList);
+    app.get('/api/numberCheck/:PersNo',auth,emp.NumberCheckDocList);
 };

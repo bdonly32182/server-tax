@@ -2,6 +2,7 @@ const passport = require('passport')
 module.exports=app=>{
     const auth = passport.authenticate('jwt',{session:false});
     const tax = require('../Controller/Tax.controller');
+    app.post('/api/address',auth,tax.updateAddress);
     app.post('/api/generate',auth,tax.generate_tax);
     app.post('/api/build/tax',auth,tax.build_generate_tax);
     app.get('/api/tax/:tax',auth,tax.fetch_tax_id);

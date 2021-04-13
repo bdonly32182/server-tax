@@ -30,6 +30,9 @@ module.exports=(sequelize,DataTypes)=>{
             //ราคาประเมิณสิ่งปลูกสร้าง  พื้นที่ทั้งหมด คูณ ราคา
             type:DataTypes.DOUBLE
         },
+        YearBuild:{
+            type:DataTypes.INTEGER
+        },
         Age_Build:{
             type:DataTypes.INTEGER
         },
