@@ -25,6 +25,16 @@ module.exports=(sequelize,DataTypes)=>{
         },
         Abbreviations:{
             type:DataTypes.STRING(20)
+        },
+        MonthPay:{
+            type:DataTypes.DATEONLY,
+            defaultValue: DataTypes.NOW
+        },
+        LeaderOfDistrict:{
+         type:DataTypes.STRING(255),
+         },
+        ExportBookNo:{
+            type:DataTypes.STRING(255),
         }
     },{
         tableName:"district",
@@ -40,6 +50,8 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasMany(models.Building,{foreignKey:'Build_in_district'})
         model.hasMany(models.CheckBook,{foreignKey:'districtNo'});
         model.hasMany(models.CostBook,{foreignKey:'districtNo'});
+        model.hasMany(models.WarningDoc,{foreignKey:'WarningDistrict'});
+        model.hasOne(models.PaymentDoc,{foreignKey:'PaymentDistrict'});
 
     }
     return model

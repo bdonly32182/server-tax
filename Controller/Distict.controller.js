@@ -8,8 +8,8 @@ exports.getAll = (async(req,res)=>{
    return res.status(401).send()    
 })
 exports.getById =(async(req,res)=>{
-    if(req.user.role === "admin")res.status(200).send(req.distictId)
-     res.status(401).send()
+    if(req.user.role === "admin"||req.user.role  === "leader") return res.status(200).send(req.distictId)
+    return res.status(401).send()
 })
 exports.createDistict = (async(req,res)=>{
     if(req.user.role === "admin"){
@@ -29,7 +29,7 @@ exports.createDistict = (async(req,res)=>{
 
 exports.editDistic =(async(req,res)=>{
     const {District_no,District_name} = req.body
-    if(req.user.role === "admin"){
+    if(req.user.role === "admin" ||req.user.role  === "leader"){
             await db.District.update(req.body,{
             where:{District_no:req.distictId.District_no}
         })

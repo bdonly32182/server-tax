@@ -4,6 +4,9 @@ module.exports=(sequelize,DataTypes)=>{
             type:DataTypes.STRING(255),
             primaryKey:true
         },
+        SendTo:{
+            type:DataTypes.STRING(255)
+        },
         PriceEmptyRoom:{
             type:DataTypes.DOUBLE
         },
@@ -57,6 +60,9 @@ module.exports=(sequelize,DataTypes)=>{
         Year:{
             type:DataTypes.STRING(25)
         },
+        FinishMonth:{
+            type:DataTypes.DATEONLY
+        },
         PathPDF:{
             type:DataTypes.STRING(255),
         }
@@ -69,6 +75,9 @@ module.exports=(sequelize,DataTypes)=>{
      model.belongsTo(models.Employee,{foreignKey:'Employee_No'});
      model.belongsTo(models.District,{foreignKey:'districtNo'});
      model.belongsTo(models.Tax_Group,{foreignKey:'TaxCostBook'});
+     model.hasOne(models.Bills,{foreignKey:'CostInBillsID'});
+     model.hasMany(models.WarningDoc,{foreignKey:'CostInWarning'});
+     model.hasOne(models.PaymentDoc,{foreignKey:'CostInPayID'});
 
     }
     return model

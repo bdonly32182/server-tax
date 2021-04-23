@@ -12,4 +12,10 @@ module.exports= app =>{
     app.get('/api/checkbook/:checkbookID',auth,containnerDoc.FetchCheckBook);
     app.get('/api/costbook/:costbookID',auth,containnerDoc.FetchCostBook);
     app.get('/api/openpdf',auth,containnerDoc.OpenPDF);
+    app.post('/api/savewarnigndoc',auth,containnerDoc.onSaveWarning);
+    app.post('/api/savepaymentdoc',auth,containnerDoc.onSavePayment);
+    app.put('/api/updatepayment/:PaymentID',auth,containnerDoc.onUpdatePayment);
+    app.delete('/api/deletepayment/:PaymentID',auth,containnerDoc.onDeletePayment);
+    app.put('/api/updatewarning/:IdWarning',auth,containnerDoc.onUpdateWarning);
+    app.delete('/api/deletewarning/:IdWarning',auth,containnerDoc.onDeleteWarning);
 }

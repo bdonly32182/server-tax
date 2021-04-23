@@ -14,5 +14,6 @@ module.exports=app=>{
     app.get('/api/pds4/:id_tax',auth,tax.fetch_pds4_byIdTax);
     app.get('/api/pds8/:id_tax',auth,tax.fetch_pds8_byIdTax);
     app.get('/api/pds6/:id_tax',auth,tax.fetch_pds6_byIdTax);
+    app.get('/api/cart/taxcostbook',auth,tax.CartTax);
     app.get('/test/uid',tax.testGenerateTax)
 }

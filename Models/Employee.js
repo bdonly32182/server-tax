@@ -36,7 +36,8 @@ module.exports=(sequelize,DataTypes)=>{
         model.hasMany(models.CheckBook,{foreignKey:'Employee_No'});
         model.hasMany(models.CostBook,{foreignKey:'Employee_No'});
         model.hasMany(models.Condo,{foreignKey:'employee_condo'})
-
+        model.hasMany(models.WarningDoc,{foreignKey:'EmployeeWarningID'});
+        model.hasMany(models.PaymentDoc,{foreignKey:'EmployeePaymentID'});
     }
     return model
 

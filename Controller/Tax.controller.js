@@ -156,7 +156,7 @@ const fetch_tax_id = async(req,res) => {
   }
   return res.status(401).send()
 }
-const list_tax_id = async(req,res) => {
+ const list_tax_id = async(req,res) => {
   let {size,page} = req.query
   if (req.user.role === "leader" || req.user.role === "employee"){
     const taxs = await sequelize.query(`select  *,(select count(*) from customer C inner join customer_has_tax CT on C.id_customer= CT.Cus_No where CT.Customer_Tax_ID = T.uid_tax) as countCustomer 
@@ -193,10 +193,11 @@ const fetch_pds3_byIdTax = async(req,res) =>{
   
  return res.status(403).send();
 } 
+
 const fetch_pds6_byIdTax = async(req,res)=>{
   const Tax_ID = req.params.id_tax;
   if (req.user.role  === "leader" || req.user.role=== "employee") {
-      let leader = await db.Employee.findOne({where:{[Op.and]:[{distict_id:req.user.distict_id},{role:"leader"}]}});
+      // let leader = await db.Employee.findOne({where:{[Op.and]:[{distict_id:req.user.distict_id},{role:"leader"}]}});
       let Land = await sequelize.query(`
                     select count(L.code_land) as totalLand from land L left join usefulLand UL on L.code_land = UL.Land_id
                     where UL.UsefulLand_Tax_ID = "${Tax_ID}"
@@ -211,7 +212,7 @@ const fetch_pds6_byIdTax = async(req,res)=>{
         select count(*) as totalRoom from room where Room_Tax_ID ="${Tax_ID}"
       `,{type:QueryTypes.SELECT})
       console.log(Room);
-      return res.status(200).send({leader,Land,Building,Room})
+      return res.status(200).send({Land,Building,Room})
   }
   return res.status(403).send();
 }
@@ -243,7 +244,13 @@ const fetch_pds7_byIdTax = async(req,res)=> {
           // attributes:[ 'AfterPriceDepreciate',[Sequelize.fn('SUM',Sequelize.col('BuildOnUsefulLands.Building.AfterPriceDepreciate')),'totalBuildPrice']],
         }
       },
-      db.Land,
+        {
+          model:db.Land,
+          include:{
+            model:db.Employee,
+            attributes:['TableNo','Pers_no']
+          }
+        },
         {model:db.LiveType,//เอาไปทำสัดส่วน
           include:[{
               model:db.Building,
@@ -301,10 +308,38 @@ const fetch_pds8_byIdTax = async(req,res) => {
     const usefultype = await db.Useful_room.findAll({include:{
       model:db.Room,
       where:{Room_Tax_ID:targetId},
-      include:[db.Condo]
+      include:[{
+        model:db.Condo,
+        include:{
+            model:db.Employee,
+            attributes:['TableNo','Pers_no']
+        }
+      }]
 
     }});
     return res.status(200).send(usefultype);
+  }
+  return res.status(403).send();
+}
+const CartTax = async(req,res) => {
+  if (req.user.role === "leader" || req.user.role === "employee"){
+    let cartTax = await sequelize.query(`
+    select count(L.code_land)as amountLand,count(B.Build_Id)as amountBuild, count(R.id) as amountRoom,T.uid_tax
+    ,A.Num_House,A.Moo,A.Soi,A.Road_Name,A.Tambol,A.district_name,A.Changwat,A.Post_No
+    from tax_group T left join land L on T.uid_tax = L.Land_Tax_ID
+    left join building B on T.uid_tax = B.Build_Tax_ID left join room R on R.Room_Tax_ID = T.uid_tax
+    inner join address A on A.Address_Tax_ID = T.uid_tax
+    where T.Tax_in_district ="${req.user.distict_id}"  and T.uid_tax  in ( select T.uid_tax from employee E left join land L on E.Pers_no = L.employee_land
+        inner join tax_group T on T.uid_tax = L.Land_Tax_ID left join condo C on E.Pers_no = C.employee_condo
+        where E.Pers_no = "${req.user.Pers_no}" 
+            and T.uid_tax not in (select TG.uid_tax from tax_group TG inner join cost_book CB on CB.TaxCostBook = TG.uid_tax)
+    )
+    and A.Num_House IS NOT NULL and A.Tambol IS NOT NULL and A.district_name IS NOT NULL
+    and A.Changwat IS NOT NULL and A.Post_No IS NOT NULL
+    group by T.uid_tax
+    having count(L.code_land) >0 or count(B.Build_Id) > 0 or count(R.id) >0
+    `,{type:QueryTypes.SELECT}) ;
+    return res.status(200).send(cartTax);
   }
   return res.status(403).send();
 }
@@ -328,35 +363,43 @@ const testGenerateTax = async(req,res)=>{
 //   })
 
 //test Seach Room in condo 
-let floor = req.query.floor
-let ratePriceQuery =  req.query.rate
-let roomFloor = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
-    include:{model:db.Room ,
-        where:{Floor:floor},include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]} 
-    })
+// let floor = req.query.floor
+// let ratePriceQuery =  req.query.rate
+// let roomFloor = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
+//     include:{model:db.Room ,
+//         where:{Floor:floor},include:[{model:db.Tax_Group,include:[db.Customer]},db.Useful_room]} 
+//     })
  //test ratePrice Room
- let price = 0;
- let hasTax = 0;//0 ===ไม่มีรหัสผู้เสียภาษี
- let ratePrice = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
-  include:{model:db.Room 
-    ,include:[{model:db.Tax_Group,include:[db.Customer]},
-    {
-      model:db.Useful_room,
-      where:{Price_Room:{[Op.eq]:0}}
-    }]} 
-  })
+//  let price = 0;
+//  let hasTax = 0;//0 ===ไม่มีรหัสผู้เสียภาษี
+//  let ratePrice = await db.Condo.findOne({where:{[Op.and]:[{distict_id:36},{id:37}]},
+//   include:{model:db.Room 
+//     ,include:[{model:db.Tax_Group,include:[db.Customer]},
+//     {
+//       model:db.Useful_room,
+//       where:{Price_Room:{[Op.eq]:0}}
+//     }]} 
+//   })
   //test floor 
   //hastax >0 คือเลือกทั้งหมด
-  let groupFloor = await db.Room.findAll({where:{[Op.and]:[{Condo_no:37},{Floor:3},hasTax>0?hasTax===1?{Room_Tax_ID:{[Op.not]:null}}:{Room_Tax_ID:{[Op.is]:null}}:null]},
-    include:[{model:db.Tax_Group,include:[db.Customer]},
-    {
-      model:db.Useful_room,
-      where:{Price_Room:price===0?{[Op.eq]:price}:{[Op.gt]:price}}
-    }],
+  // let groupFloor = await db.Room.findAll({where:{[Op.and]:[{Condo_no:37},{Floor:3},hasTax>0?hasTax===1?{Room_Tax_ID:{[Op.not]:null}}:{Room_Tax_ID:{[Op.is]:null}}:null]},
+  //   include:[{model:db.Tax_Group,include:[db.Customer]},
+  //   {
+  //     model:db.Useful_room,
+  //     where:{Price_Room:price===0?{[Op.eq]:price}:{[Op.gt]:price}}
+  //   }],
     
-  } );
+  // } );
   
-  res.send(groupFloor);
+  
+  let test  = await db.Building.unscoped().findOne({
+    attributes: ['Build_Id',[sequelize.fn('min', sequelize.col('createdAt')), 'min']],
+  })
+  let maxLandDate = await sequelize.query(`
+  select * from land
+  where employee_land ="3250400950211" and (createdAt = (select max(createdAt) from land ))
+  `,{type:QueryTypes.SELECT})   ;
+  res.send(maxLandDate);
 }
 module.exports={
     generate_tax,
@@ -371,5 +414,6 @@ module.exports={
     fetch_pds8_byIdTax,
     testGenerateTax,
     fetch_pds6_byIdTax,
-    updateAddress
+    updateAddress,
+    CartTax
   }

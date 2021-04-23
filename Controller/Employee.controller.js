@@ -7,6 +7,7 @@ const {QueryTypes} = require('sequelize')
 
 const Op = db.Sequelize.Op
 const ConfirmMember = async(req,res)=>{
+   
     if (req.user.role === "leader" ||req.user.role === 'admin'){
         let {Pers_no,password,Fname,Lname,role_name,picture,distict_member_id,TableNo} = req.body
         let checkUser = await db.Employee.findOne({where:{Pers_no:Pers_no}})
@@ -39,6 +40,34 @@ const ConfirmMember = async(req,res)=>{
     }
     return res.status(403).send()
 };
+const ConfirmAdmin = async(req,res)=>{
+    if (req.body.role_name ==="admin") {
+        let {Pers_no,password,Fname,Lname,role_name,picture,distict_member_id,TableNo} = req.body
+        bcrypt.genSalt(10,(err,salt)=>{
+            if(err) throw err
+            bcrypt.hash(password,salt,async(err,hash)=>{
+                if(err) throw err
+                const newEmp =await db.Employee.create({
+                    Pers_no,
+                    Fname,
+                    Lname,
+                    picture,
+                    TableNo,
+                    distict_id: distict_member_id,
+                    role:role_name
+                })
+                await db.Employee_Login.create({
+                    password:hash,
+                    employee_no:newEmp.Pers_no
+                })    
+                await db.MemberList.destroy({where:{Pers_no:Pers_no}})
+               
+            })
+        }) 
+        return res.status(200).send({msg:'ยืนยันแอดมินเรียบร้อยแล้ว'})
+    }
+    return res.status(400).send()
+}
 const Login = async(req,res) =>{
     const {Pers_no,password} = req.body
     const user = await db.Employee.findOne({where:{Pers_no:Pers_no},include:[db.Employee_Login,db.District]});
@@ -50,8 +79,8 @@ const Login = async(req,res) =>{
         else {
             jwt.sign(
                 {Pers_no:user.Pers_no,distict_id:user.distict_id,role:user.role,Fname:user.Fname,Lname:user.Lname,
-                    TableNo:user.TableNo,
-                    picture:user.picture,Abbreviations:user.District.Abbreviations,District_name:user.District.District_name
+                    TableNo:user.TableNo,district_leader:user.District.LeaderOfDistrict,exportBookNo:user.District.ExportBookNo,
+                    picture:user.picture,MonthPay:user.District.MonthPay,District_name:user.District.District_name
                 },config["jwtSecret"],{expiresIn:'1days'},
             (err,token)=>{
                 if(err) throw err
@@ -102,18 +131,7 @@ const list_employee = async(req,res) => {
     }
     return res.status(403).send();
 }
-const NumberCostDocList = async(req,res) => {
-    if (req.user.role === "leader" ||req.user.role === "employee") {
-        let PersNo = req.params.PersNo
-        let numberRun = await sequelize.query(`
-        select count(*)as amountBook from cost_book where Employee_No = "${PersNo}"
-        `,{type:QueryTypes.SELECT});
-        // let numberPdfIsNull = await db.CostBook.findAll({where:{[Op.and]:[{Employee_No:PersNo},{PathPDF:{[Op.is]:null}},
-        //     {TaxOwnerBook:{[Op.is]:null}}]}});
-        return res.status(200).send({numberRun});
-    }
-    return res.status(403).send();
-}
+
 const NumberCheckDocList = async(req,res) => {
     if (req.user.role === "leader" ||req.user.role === "employee") {
         let PersNo = req.params.PersNo
@@ -131,6 +149,6 @@ module.exports ={
     Login,
     change_profile,
     list_employee,
-    NumberCostDocList,
-    NumberCheckDocList
+    NumberCheckDocList,
+    ConfirmAdmin
 }
