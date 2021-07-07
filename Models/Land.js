@@ -78,6 +78,7 @@ module.exports=(sequelize,DataTypes)=>{
         model.belongsTo(models.Tax_Group,{foreignKey:"Land_Tax_ID"})
         model.hasMany(models.RateLand,{foreignKey:"land_id"});
         model.belongsTo(models.Employee,{foreignKey:'employee_land'})
+        model.belongsToMany(models.UsefulLand,{as:'Lands',through: 'Nexto_Land',foreignKey:'landID' });
 
     }
     return model

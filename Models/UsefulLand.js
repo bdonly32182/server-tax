@@ -70,7 +70,7 @@ module.exports=(sequelize,DataTypes)=>{
         model.belongsToMany(models.FarmType,{through:models.Useful_farm,foreignKey:"Useful_farm_ID"});
         model.belongsToMany(models.EmptyType,{through:models.Useful_empty,foreignKey:"Useful_empty_ID"});
         model.belongsToMany(models.OtherType,{through:models.Useful_other,foreignKey:"Useful_other_ID"});
-        model.belongsToMany(models.UsefulLand,{as:'Useful',through: 'Nexto_Useful',foreignKey:'Useful_ID' });
+        // model.belongsToMany(models.UsefulLand,{as:'Useful',through: 'Nexto_Useful',foreignKey:'Useful_ID' });
         model.belongsTo(models.Tax_Group,{foreignKey:'UsefulLand_Tax_ID'})
 
     }
